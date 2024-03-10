@@ -20,6 +20,7 @@ type PrePrepareMsg struct {
 	SequenceID int64       `json:"sequenceID"`
 	Digest     string      `json:"digest"`
 	RequestMsg *RequestMsg `json:"requestMsg"`
+	Sign       []byte
 }
 
 type VoteMsg struct {
@@ -27,10 +28,12 @@ type VoteMsg struct {
 	SequenceID int64  `json:"sequenceID"`
 	Digest     string `json:"digest"`
 	NodeID     string `json:"nodeID"`
-	MsgType           `json:"msgType"`
+	MsgType    `json:"msgType"`
+	Sign       []byte
 }
 
 type MsgType int
+
 const (
 	PrepareMsg MsgType = iota
 	CommitMsg

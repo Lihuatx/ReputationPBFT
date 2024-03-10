@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -155,6 +156,11 @@ func (node *Node) GetReq(reqMsg *consensus.RequestMsg) error {
 		return err
 	}
 
+	// 主节点对消息摘要进行签名
+	digestByte, _ := hex.DecodeString(prePrepareMsg.Digest)
+	signInfo := node.RsaSignWithSha256(digestByte, node.rsaPrivKey)
+	prePrepareMsg.Sign = signInfo
+
 	LogStage(fmt.Sprintf("Consensus Process (ViewID:%d)", node.CurrentState.ViewID), false)
 
 	// Send getPrePrepare message
@@ -176,7 +182,7 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg) error {
 	if err != nil {
 		return err
 	}
-
+	// fmt.Printf("get Pre\n")
 	prePareMsg, err := node.CurrentState.PrePrepare(prePrepareMsg)
 	if err != nil {
 		return err
