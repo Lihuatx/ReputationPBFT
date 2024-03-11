@@ -41,6 +41,9 @@ func (server *Server) setRoute() {
 func (server *Server) getReq(writer http.ResponseWriter, request *http.Request) {
 	var msg consensus.RequestMsg
 	err := json.NewDecoder(request.Body).Decode(&msg)
+	// for test
+	fmt.Printf("[Test-IN-GetReq-REQUEST] ClientID: %s, Timestamp: %d, Operation: %s\n", msg.ClientID, msg.Timestamp, msg.Operation)
+	fmt.Printf("\n")
 	if err != nil {
 		fmt.Println(err)
 		return
