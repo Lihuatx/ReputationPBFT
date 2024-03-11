@@ -183,9 +183,7 @@ func (state *State) verifyMsg(viewID int64, sequenceID int64, digestGot string) 
 		fmt.Println(err)
 		return false
 	}
-	// Check 数字签名
 
-	// Check digest.
 	if digestGot != digest {
 		fmt.Printf("digest Error\n")
 		return false
