@@ -30,3 +30,20 @@ func LogStage(stage string, isDone bool) {
 		fmt.Printf("[STAGE-BEGIN] %s\n", stage)
 	}
 }
+
+func ErrMessage(msg interface{}) {
+	fmt.Printf("------\n")
+	switch msg.(type) {
+	case *consensus.PrePrepareMsg:
+		prePrepareMsg := msg.(*consensus.PrePrepareMsg)
+		fmt.Printf("Error message: [PREPREPARE] ClientID: %s, Operation: %s, SequenceID: %d\n", prePrepareMsg.RequestMsg.ClientID, prePrepareMsg.RequestMsg.Operation, prePrepareMsg.SequenceID)
+	case *consensus.VoteMsg:
+		voteMsg := msg.(*consensus.VoteMsg)
+		if voteMsg.MsgType == consensus.PrepareMsg {
+			fmt.Printf("Error message: PREPAREMsg NodeID: %s, SequenceID: %d\n", voteMsg.NodeID, voteMsg.SequenceID)
+		} else if voteMsg.MsgType == consensus.CommitMsg {
+			fmt.Printf("Error message: COMMITMsg NodeID: %s,  SequenceID: %d\n", voteMsg.NodeID, voteMsg.SequenceID)
+		}
+	}
+	fmt.Printf("------\n")
+}

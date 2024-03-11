@@ -128,6 +128,9 @@ func (node *Node) Reply(msg *consensus.ReplyMsg) error {
 	}
 	fmt.Print("\n")
 
+	node.View.ID++
+	fmt.Printf("Node %s View ID ++ %d\n", node.NodeID, node.View.ID)
+
 	jsonMsg, err := json.Marshal(msg)
 	if err != nil {
 		return err
@@ -136,6 +139,8 @@ func (node *Node) Reply(msg *consensus.ReplyMsg) error {
 	// Client가 없으므로, 일단 Primary에게 보내는 걸로 처리.
 	send(node.NodeTable[node.View.Primary]+"/reply", jsonMsg)
 
+	// 重置节点状态等待下一次共识
+	// node.CurrentState.CurrentStage = consensus.Idle
 	return nil
 }
 
@@ -167,7 +172,7 @@ func (node *Node) GetReq(reqMsg *consensus.RequestMsg) error {
 	if prePrepareMsg != nil {
 		// 附加主节点ID,用于数字签名验证
 		prePrepareMsg.NodeID = node.NodeID
-
+		prePrepareMsg.ViewID = node.View.ID
 		node.Broadcast(prePrepareMsg, "/preprepare")
 		LogStage("Pre-prepare", true)
 	}
@@ -219,9 +224,10 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 
 	commitMsg, err := node.CurrentState.Prepare(prepareMsg)
 	if err != nil {
+		ErrMessage(prepareMsg)
 		return err
 	}
-
+	fmt.Printf("%s vote for prepare\n", prepareMsg.NodeID)
 	if commitMsg != nil {
 		// Attach node ID to the message 同时对摘要签名
 		commitMsg.NodeID = node.NodeID
@@ -237,6 +243,11 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 }
 
 func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
+	// 当节点已经完成Committed阶段后就停止接收其他节点的Committed消息
+	if node.CurrentState.CurrentStage == consensus.Committed {
+		return nil
+	}
+
 	LogMsg(commitMsg)
 
 	digest, _ := hex.DecodeString(commitMsg.Digest)
@@ -246,8 +257,11 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 
 	replyMsg, committedMsg, err := node.CurrentState.Commit(commitMsg)
 	if err != nil {
+		ErrMessage(committedMsg)
+
 		return err
 	}
+	fmt.Printf("%s vote for commit\n", commitMsg.NodeID)
 
 	if replyMsg != nil {
 		if committedMsg == nil {
@@ -262,7 +276,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 
 		LogStage("Commit", true)
 		node.Reply(replyMsg)
-		LogStage("Reply", true)
+		LogStage("Reply\n", true)
 	}
 
 	return nil
@@ -275,7 +289,9 @@ func (node *Node) GetReply(msg *consensus.ReplyMsg) {
 func (node *Node) createStateForNewConsensus() error {
 	// Check if there is an ongoing consensus process.
 	if node.CurrentState != nil {
-		return errors.New("another consensus is ongoing")
+		if node.CurrentState.CurrentStage != consensus.Committed {
+			return errors.New("another consensus is ongoing")
+		}
 	}
 
 	// Get the last sequence ID
@@ -316,7 +332,7 @@ func (node *Node) dispatchMsg() {
 func (node *Node) routeMsg(msg interface{}) []error {
 	switch msg.(type) {
 	case *consensus.RequestMsg:
-		if node.CurrentState == nil { //一开始没有进行共识的时候，此时 currentstate 为nil
+		if node.CurrentState == nil || node.CurrentState.CurrentStage == consensus.Committed { //一开始没有进行共识的时候，此时 currentstate 为nil
 			// Copy buffered messages first.
 			msgs := make([]*consensus.RequestMsg, len(node.MsgBuffer.ReqMsgs))
 			copy(msgs, node.MsgBuffer.ReqMsgs)
@@ -333,7 +349,7 @@ func (node *Node) routeMsg(msg interface{}) []error {
 			node.MsgBuffer.ReqMsgs = append(node.MsgBuffer.ReqMsgs, msg.(*consensus.RequestMsg))
 		}
 	case *consensus.PrePrepareMsg:
-		if node.CurrentState == nil {
+		if node.CurrentState == nil || node.CurrentState.CurrentStage == consensus.Committed {
 			// Copy buffered messages first.
 			msgs := make([]*consensus.PrePrepareMsg, len(node.MsgBuffer.PrePrepareMsgs))
 			copy(msgs, node.MsgBuffer.PrePrepareMsgs)
@@ -474,6 +490,7 @@ func (node *Node) resolveMsg() {
 					}
 					// TODO: send err to ErrorChannel
 				}
+
 			}
 		}
 	}

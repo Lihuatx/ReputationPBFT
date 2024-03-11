@@ -107,6 +107,7 @@ func (state *State) PrePrepare(prePrepareMsg *PrePrepareMsg) (*VoteMsg, error) {
 
 func (state *State) Prepare(prepareMsg *VoteMsg) (*VoteMsg, error) {
 	if !state.verifyMsg(prepareMsg.ViewID, prepareMsg.SequenceID, prepareMsg.Digest) {
+		fmt.Printf("prepare message is corrupted ------ 1\n")
 		return nil, errors.New("prepare message is corrupted")
 	}
 
@@ -133,6 +134,7 @@ func (state *State) Prepare(prepareMsg *VoteMsg) (*VoteMsg, error) {
 
 func (state *State) Commit(commitMsg *VoteMsg) (*ReplyMsg, *RequestMsg, error) {
 	if !state.verifyMsg(commitMsg.ViewID, commitMsg.SequenceID, commitMsg.Digest) {
+		fmt.Printf("commit message is corrupted ------ 1\n")
 		return nil, nil, errors.New("commit message is corrupted")
 	}
 
@@ -163,6 +165,7 @@ func (state *State) Commit(commitMsg *VoteMsg) (*ReplyMsg, *RequestMsg, error) {
 func (state *State) verifyMsg(viewID int64, sequenceID int64, digestGot string) bool {
 	// Wrong view. That is, wrong configurations of peers to start the consensus.
 	if state.ViewID != viewID {
+		fmt.Printf("ViewID error:%d\n", viewID)
 		return false
 	}
 
@@ -170,6 +173,7 @@ func (state *State) verifyMsg(viewID int64, sequenceID int64, digestGot string) 
 	// TODO: adopt upper/lower bound check.
 	if state.LastSequenceID != -1 {
 		if state.LastSequenceID >= sequenceID {
+			fmt.Printf("seqID error\n")
 			return false
 		}
 	}
@@ -183,6 +187,7 @@ func (state *State) verifyMsg(viewID int64, sequenceID int64, digestGot string) 
 
 	// Check digest.
 	if digestGot != digest {
+		fmt.Printf("digest Error\n")
 		return false
 	}
 
