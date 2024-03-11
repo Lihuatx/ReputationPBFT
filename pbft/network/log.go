@@ -40,6 +40,9 @@ func ErrMessage(msg interface{}) {
 	case *consensus.VoteMsg:
 		voteMsg := msg.(*consensus.VoteMsg)
 		if voteMsg.MsgType == consensus.PrepareMsg {
+			fmt.Printf("Error message: PREPAREMsg NodeID: %s, SequenceID: %d\n", voteMsg.NodeID, voteMsg.SequenceID)
+		} else if voteMsg.MsgType == consensus.CommitMsg {
+			fmt.Printf("Error message: COMMITMsg NodeID: %s,  SequenceID: %d\n", voteMsg.NodeID, voteMsg.SequenceID)
 			fmt.Printf("Error message: PREPAREMsg NodeID: %s\n", voteMsg.NodeID)
 		} else if voteMsg.MsgType == consensus.CommitMsg {
 			fmt.Printf("Error message: COMMITMsg NodeID: %s\n", voteMsg.NodeID)

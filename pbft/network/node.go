@@ -77,9 +77,9 @@ func NewNode(nodeID string) *Node {
 		},
 
 		// Channels
-		MsgEntrance: make(chan interface{}, 10),
-		MsgDelivery: make(chan interface{}, 10),
-		Alarm:       make(chan bool, 5),
+		MsgEntrance: make(chan interface{}, 5),
+		MsgDelivery: make(chan interface{}, 5),
+		Alarm:       make(chan bool),
 	}
 
 	node.rsaPubKey = node.getPubKey(nodeID)
@@ -128,6 +128,8 @@ func (node *Node) Reply(msg *consensus.ReplyMsg) error {
 	}
 	fmt.Print("\n")
 
+	node.View.ID++
+
 	jsonMsg, err := json.Marshal(msg)
 	if err != nil {
 		return err
@@ -137,7 +139,7 @@ func (node *Node) Reply(msg *consensus.ReplyMsg) error {
 	send(node.NodeTable[node.View.Primary]+"/reply", jsonMsg)
 
 	// 重置节点状态等待下一次共识
-	// node.CurrentState = nil
+	// node.CurrentState.CurrentStage = consensus.Idle
 	return nil
 }
 
@@ -194,8 +196,6 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg) error {
 	}
 	prePareMsg, err := node.CurrentState.PrePrepare(prePrepareMsg)
 	if err != nil {
-		ErrMessage(prePrepareMsg)
-
 		return err
 	}
 
@@ -226,7 +226,6 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 		ErrMessage(prepareMsg)
 		return err
 	}
-
 	if commitMsg != nil {
 		// Attach node ID to the message 同时对摘要签名
 		commitMsg.NodeID = node.NodeID
@@ -256,6 +255,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 
 	replyMsg, committedMsg, err := node.CurrentState.Commit(commitMsg)
 	if err != nil {
+		ErrMessage(committedMsg)
 		return err
 	}
 
@@ -363,6 +363,9 @@ func (node *Node) routeMsg(msg interface{}) []error {
 		}
 	case *consensus.VoteMsg:
 		if msg.(*consensus.VoteMsg).MsgType == consensus.PrepareMsg {
+			// if node.CurrentState == nil || node.CurrentState.CurrentStage != consensus.PrePrepared
+			// 这样的写法会导致当当前节点已经收到2f个节点进入committed阶段时，就会把后来收到的Preprepare消息放到缓冲区中，
+			// 这样在下次共识又到prePrepare阶段时就会先去处理上一轮共识的prePrepare协议！
 			if node.CurrentState == nil || node.CurrentState.CurrentStage != consensus.PrePrepared {
 				node.MsgBuffer.PrepareMsgs = append(node.MsgBuffer.PrepareMsgs, msg.(*consensus.VoteMsg))
 			} else {
@@ -503,6 +506,8 @@ func (node *Node) resolveRequestMsg(msgs []*consensus.RequestMsg) []error {
 	errs := make([]error, 0)
 
 	// Resolve messages
+	fmt.Printf("len RequestMsg msg %d\n", len(msgs))
+
 	for _, reqMsg := range msgs {
 		err := node.GetReq(reqMsg)
 		if err != nil {
@@ -521,7 +526,13 @@ func (node *Node) resolvePrePrepareMsg(msgs []*consensus.PrePrepareMsg) []error 
 	errs := make([]error, 0)
 
 	// Resolve messages
+	// 从下标num_of_event_to_resolve开始执行，之前执行过的PrePrepareMsg不需要再执行
+	fmt.Printf("len PrePrepareMsg msg %d\n", len(msgs))
+
 	for _, prePrepareMsg := range msgs {
+		if prePrepareMsg.ViewID != node.View.ID {
+			continue
+		}
 		err := node.GetPrePrepare(prePrepareMsg)
 		if err != nil {
 			errs = append(errs, err)
@@ -539,7 +550,11 @@ func (node *Node) resolvePrepareMsg(msgs []*consensus.VoteMsg) []error {
 	errs := make([]error, 0)
 
 	// Resolve messages
+	fmt.Printf("len PrepareMsg msg %d\n", len(msgs))
 	for _, prepareMsg := range msgs {
+		if prepareMsg.ViewID != node.View.ID {
+			continue
+		}
 		err := node.GetPrepare(prepareMsg)
 		if err != nil {
 			errs = append(errs, err)
@@ -557,7 +572,12 @@ func (node *Node) resolveCommitMsg(msgs []*consensus.VoteMsg) []error {
 	errs := make([]error, 0)
 
 	// Resolve messages
+	fmt.Printf("len CommitMsg msg %d\n", len(msgs))
+
 	for _, commitMsg := range msgs {
+		if commitMsg.ViewID != node.View.ID {
+			continue
+		}
 		err := node.GetCommit(commitMsg)
 		if err != nil {
 			errs = append(errs, err)
