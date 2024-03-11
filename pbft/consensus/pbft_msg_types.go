@@ -19,8 +19,9 @@ type PrePrepareMsg struct {
 	ViewID     int64       `json:"viewID"`
 	SequenceID int64       `json:"sequenceID"`
 	Digest     string      `json:"digest"`
+	NodeID     string      `json:"nodeID"` //添加nodeID
 	RequestMsg *RequestMsg `json:"requestMsg"`
-	Sign       []byte
+	Sign       []byte      //添加sign
 }
 
 type VoteMsg struct {

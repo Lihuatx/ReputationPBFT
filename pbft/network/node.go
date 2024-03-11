@@ -160,6 +160,8 @@ func (node *Node) GetReq(reqMsg *consensus.RequestMsg) error {
 	digestByte, _ := hex.DecodeString(prePrepareMsg.Digest)
 	signInfo := node.RsaSignWithSha256(digestByte, node.rsaPrivKey)
 	prePrepareMsg.Sign = signInfo
+	// 附加节点ID,用于数字签名验证
+	prePrepareMsg.NodeID = node.NodeID
 
 	LogStage(fmt.Sprintf("Consensus Process (ViewID:%d)", node.CurrentState.ViewID), false)
 
@@ -183,6 +185,10 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg) error {
 		return err
 	}
 	// fmt.Printf("get Pre\n")
+	digest, _ := hex.DecodeString(prePrepareMsg.Digest)
+	if !node.RsaVerySignWithSha256(digest, prePrepareMsg.Sign, node.getPubKey(prePrepareMsg.NodeID)) {
+		fmt.Println("节点签名验证失败！,拒绝执行Preprepare")
+	}
 	prePareMsg, err := node.CurrentState.PrePrepare(prePrepareMsg)
 	if err != nil {
 		return err

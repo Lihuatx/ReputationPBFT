@@ -92,6 +92,8 @@ func (state *State) PrePrepare(prePrepareMsg *PrePrepareMsg) (*VoteMsg, error) {
 		return nil, errors.New("pre-prepare message is corrupted")
 	}
 
+	// Check
+
 	// Change the stage to pre-prepared.
 	state.CurrentStage = PrePrepared
 
@@ -177,6 +179,7 @@ func (state *State) verifyMsg(viewID int64, sequenceID int64, digestGot string) 
 		fmt.Println(err)
 		return false
 	}
+	// Check 数字签名
 
 	// Check digest.
 	if digestGot != digest {
