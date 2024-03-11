@@ -140,7 +140,11 @@ func (node *Node) Reply(msg *consensus.ReplyMsg) error {
 	send(node.NodeTable[node.View.Primary]+"/reply", jsonMsg)
 
 	// 重置节点状态等待下一次共识
+<<<<<<< HEAD
 	// node.CurrentState.CurrentStage = consensus.Idle
+=======
+	// node.CurrentState = nil
+>>>>>>> origin/main
 	return nil
 }
 
@@ -197,6 +201,8 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg) error {
 	}
 	prePareMsg, err := node.CurrentState.PrePrepare(prePrepareMsg)
 	if err != nil {
+		ErrMessage(prePrepareMsg)
+
 		return err
 	}
 
