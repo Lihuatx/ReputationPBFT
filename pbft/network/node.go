@@ -160,13 +160,14 @@ func (node *Node) GetReq(reqMsg *consensus.RequestMsg) error {
 	digestByte, _ := hex.DecodeString(prePrepareMsg.Digest)
 	signInfo := node.RsaSignWithSha256(digestByte, node.rsaPrivKey)
 	prePrepareMsg.Sign = signInfo
-	// 附加节点ID,用于数字签名验证
-	prePrepareMsg.NodeID = node.NodeID
 
 	LogStage(fmt.Sprintf("Consensus Process (ViewID:%d)", node.CurrentState.ViewID), false)
 
 	// Send getPrePrepare message
 	if prePrepareMsg != nil {
+		// 附加主节点ID,用于数字签名验证
+		prePrepareMsg.NodeID = node.NodeID
+
 		node.Broadcast(prePrepareMsg, "/preprepare")
 		LogStage("Pre-prepare", true)
 	}
@@ -195,8 +196,10 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg) error {
 	}
 
 	if prePareMsg != nil {
-		// Attach node ID to the message
+		// Attach node ID to the message 同时对摘要签名
 		prePareMsg.NodeID = node.NodeID
+		signInfo := node.RsaSignWithSha256(digest, node.rsaPrivKey)
+		prePareMsg.Sign = signInfo
 
 		LogStage("Pre-prepare", true)
 		node.Broadcast(prePareMsg, "/prepare")
@@ -209,14 +212,21 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg) error {
 func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 	LogMsg(prepareMsg)
 
+	digest, _ := hex.DecodeString(prepareMsg.Digest)
+	if !node.RsaVerySignWithSha256(digest, prepareMsg.Sign, node.getPubKey(prepareMsg.NodeID)) {
+		fmt.Println("节点签名验证失败！,拒绝执行prepare")
+	}
+
 	commitMsg, err := node.CurrentState.Prepare(prepareMsg)
 	if err != nil {
 		return err
 	}
 
 	if commitMsg != nil {
-		// Attach node ID to the message
+		// Attach node ID to the message 同时对摘要签名
 		commitMsg.NodeID = node.NodeID
+		signInfo := node.RsaSignWithSha256(digest, node.rsaPrivKey)
+		commitMsg.Sign = signInfo
 
 		LogStage("Prepare", true)
 		node.Broadcast(commitMsg, "/commit")
@@ -228,6 +238,11 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 
 func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 	LogMsg(commitMsg)
+
+	digest, _ := hex.DecodeString(commitMsg.Digest)
+	if !node.RsaVerySignWithSha256(digest, commitMsg.Sign, node.getPubKey(commitMsg.NodeID)) {
+		fmt.Println("节点签名验证失败！,拒绝执行commit")
+	}
 
 	replyMsg, committedMsg, err := node.CurrentState.Commit(commitMsg)
 	if err != nil {

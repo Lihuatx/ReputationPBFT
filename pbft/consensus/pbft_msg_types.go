@@ -30,7 +30,7 @@ type VoteMsg struct {
 	Digest     string `json:"digest"`
 	NodeID     string `json:"nodeID"`
 	MsgType    `json:"msgType"`
-	Sign       []byte
+	Sign       []byte //添加sign
 }
 
 type MsgType int
