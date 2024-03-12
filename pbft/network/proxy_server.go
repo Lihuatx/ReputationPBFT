@@ -13,8 +13,8 @@ type Server struct {
 	node *Node
 }
 
-func NewServer(nodeID string) *Server {
-	node := NewNode(nodeID)
+func NewServer(nodeID string, clusterName string) *Server {
+	node := NewNode(nodeID, clusterName)
 	server := &Server{node.NodeTable[nodeID], node}
 
 	server.setRoute()

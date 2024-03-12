@@ -8,9 +8,10 @@ import (
 
 func main() {
 	genRsaKeys("N")
-	genRsaKeys("M")
+	// genRsaKeys("M")
 	nodeID := os.Args[1]
-	server := network.NewServer(nodeID)
+	clusterName := "N"
+	server := network.NewServer(nodeID, clusterName)
 
 	server.Start()
 

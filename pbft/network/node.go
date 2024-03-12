@@ -32,6 +32,9 @@ type Node struct {
 	rsaPrivKey []byte
 	//RSA公钥
 	rsaPubKey []byte
+
+	//所属集群
+	ClusterName string
 }
 
 type MsgBuffer struct {
@@ -48,7 +51,7 @@ type View struct {
 
 const ResolvingTimeDuration = time.Millisecond * 1000 // 1 second.
 
-func NewNode(nodeID string) *Node {
+func NewNode(nodeID string, clusterName string) *Node {
 	const viewID = 10000000000 // temporary.
 
 	node := &Node{
@@ -80,6 +83,9 @@ func NewNode(nodeID string) *Node {
 		MsgEntrance: make(chan interface{}, 5),
 		MsgDelivery: make(chan interface{}, 5),
 		Alarm:       make(chan bool),
+
+		// 所属集群
+		ClusterName: clusterName,
 	}
 
 	node.rsaPubKey = node.getPubKey("N", nodeID)
@@ -135,7 +141,7 @@ func (node *Node) Reply(msg *consensus.ReplyMsg) error {
 		return err
 	}
 
-	// Client가 없으므로, 일단 Primary에게 보내는 걸로 처리.
+	// 系统中没有设置用户，reply消息直接发送给主节点
 	send(node.NodeTable[node.View.Primary]+"/reply", jsonMsg)
 
 	// 重置节点状态等待下一次共识
