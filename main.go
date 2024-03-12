@@ -7,9 +7,11 @@ import (
 )
 
 func main() {
-	genRsaKeys()
+	genRsaKeys("N")
+	genRsaKeys("M")
 	nodeID := os.Args[1]
 	server := network.NewServer(nodeID)
 
 	server.Start()
+
 }

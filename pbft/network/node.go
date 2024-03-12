@@ -82,8 +82,8 @@ func NewNode(nodeID string) *Node {
 		Alarm:       make(chan bool),
 	}
 
-	node.rsaPubKey = node.getPubKey(nodeID)
-	node.rsaPrivKey = node.getPivKey(nodeID)
+	node.rsaPubKey = node.getPubKey("N", nodeID)
+	node.rsaPrivKey = node.getPivKey("N", nodeID)
 
 	// Start message dispatcher
 	go node.dispatchMsg()
@@ -191,7 +191,7 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg) error {
 	}
 	// fmt.Printf("get Pre\n")
 	digest, _ := hex.DecodeString(prePrepareMsg.Digest)
-	if !node.RsaVerySignWithSha256(digest, prePrepareMsg.Sign, node.getPubKey(prePrepareMsg.NodeID)) {
+	if !node.RsaVerySignWithSha256(digest, prePrepareMsg.Sign, node.getPubKey("N", prePrepareMsg.NodeID)) {
 		fmt.Println("节点签名验证失败！,拒绝执行Preprepare")
 	}
 	prePareMsg, err := node.CurrentState.PrePrepare(prePrepareMsg)
@@ -217,7 +217,7 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 	LogMsg(prepareMsg)
 
 	digest, _ := hex.DecodeString(prepareMsg.Digest)
-	if !node.RsaVerySignWithSha256(digest, prepareMsg.Sign, node.getPubKey(prepareMsg.NodeID)) {
+	if !node.RsaVerySignWithSha256(digest, prepareMsg.Sign, node.getPubKey("N", prepareMsg.NodeID)) {
 		fmt.Println("节点签名验证失败！,拒绝执行prepare")
 	}
 
@@ -249,7 +249,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 	LogMsg(commitMsg)
 
 	digest, _ := hex.DecodeString(commitMsg.Digest)
-	if !node.RsaVerySignWithSha256(digest, commitMsg.Sign, node.getPubKey(commitMsg.NodeID)) {
+	if !node.RsaVerySignWithSha256(digest, commitMsg.Sign, node.getPubKey("N", commitMsg.NodeID)) {
 		fmt.Println("节点签名验证失败！,拒绝执行commit")
 	}
 
@@ -592,8 +592,8 @@ func (node *Node) resolveCommitMsg(msgs []*consensus.VoteMsg) []error {
 }
 
 // 传入节点编号， 获取对应的公钥
-func (node *Node) getPubKey(nodeID string) []byte {
-	key, err := ioutil.ReadFile("Keys/" + nodeID + "/" + nodeID + "_RSA_PUB")
+func (node *Node) getPubKey(ClusterName string, nodeID string) []byte {
+	key, err := ioutil.ReadFile("Keys/" + ClusterName + "/" + nodeID + "/" + nodeID + "_RSA_PUB")
 	if err != nil {
 		log.Panic(err)
 	}
@@ -601,8 +601,8 @@ func (node *Node) getPubKey(nodeID string) []byte {
 }
 
 // 传入节点编号， 获取对应的私钥
-func (node *Node) getPivKey(nodeID string) []byte {
-	key, err := ioutil.ReadFile("Keys/" + nodeID + "/" + nodeID + "_RSA_PIV")
+func (node *Node) getPivKey(ClusterName string, nodeID string) []byte {
+	key, err := ioutil.ReadFile("Keys/" + ClusterName + "/" + nodeID + "/" + nodeID + "_RSA_PIV")
 	if err != nil {
 		log.Panic(err)
 	}

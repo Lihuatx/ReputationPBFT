@@ -12,22 +12,22 @@ import (
 )
 
 // 如果当前目录下不存在目录Keys，则创建目录，并为各个节点生成rsa公私钥
-func genRsaKeys() {
-	if !isExist("./Keys") {
+func genRsaKeys(ClusterName string) {
+	if !isExist("./Keys/" + ClusterName) {
 		fmt.Println("检测到还未生成公私钥目录，正在生成公私钥 ...")
-		err := os.Mkdir("Keys", 0644)
+		err := os.Mkdir("Keys/"+ClusterName, 0644)
 		if err != nil {
 			log.Panic()
 		}
 		for i := 0; i <= 4; i++ {
-			if !isExist("./Keys/N" + strconv.Itoa(i)) {
-				err := os.Mkdir("./Keys/N"+strconv.Itoa(i), 0644)
+			if !isExist("./Keys/" + ClusterName + "/" + ClusterName + strconv.Itoa(i)) {
+				err := os.Mkdir("./Keys/"+ClusterName+"/"+ClusterName+strconv.Itoa(i), 0644)
 				if err != nil {
 					log.Panic()
 				}
 			}
 			priv, pub := getKeyPair()
-			privFileName := "Keys/N" + strconv.Itoa(i) + "/N" + strconv.Itoa(i) + "_RSA_PIV"
+			privFileName := "./Keys/" + ClusterName + "/" + ClusterName + strconv.Itoa(i) + "/" + ClusterName + strconv.Itoa(i) + "_RSA_PIV"
 			file, err := os.OpenFile(privFileName, os.O_RDWR|os.O_CREATE, 0644)
 			if err != nil {
 				log.Panic(err)
@@ -35,7 +35,7 @@ func genRsaKeys() {
 			defer file.Close()
 			file.Write(priv)
 
-			pubFileName := "Keys/N" + strconv.Itoa(i) + "/N" + strconv.Itoa(i) + "_RSA_PUB"
+			pubFileName := "./Keys/" + ClusterName + "/" + ClusterName + strconv.Itoa(i) + "/" + ClusterName + strconv.Itoa(i) + "_RSA_PUB"
 			file2, err := os.OpenFile(pubFileName, os.O_RDWR|os.O_CREATE, 0644)
 			if err != nil {
 				log.Panic(err)
