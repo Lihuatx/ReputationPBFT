@@ -15,7 +15,7 @@ type Server struct {
 
 func NewServer(nodeID string, clusterName string) *Server {
 	node := NewNode(nodeID, clusterName)
-	server := &Server{node.NodeTable[nodeID], node}
+	server := &Server{node.NodeTable[clusterName][nodeID], node}
 
 	server.setRoute()
 
@@ -36,6 +36,10 @@ func (server *Server) setRoute() {
 	http.HandleFunc("/prepare", server.getPrepare)
 	http.HandleFunc("/commit", server.getCommit)
 	http.HandleFunc("/reply", server.getReply)
+	//接受全局共识消息
+	http.HandleFunc("/global", server.getGlobal)
+	http.HandleFunc("/GlobalToLocal", server.getGlobalToLocal)
+
 }
 
 func (server *Server) getReq(writer http.ResponseWriter, request *http.Request) {
@@ -93,6 +97,29 @@ func (server *Server) getReply(writer http.ResponseWriter, request *http.Request
 	}
 
 	server.node.GetReply(&msg)
+}
+
+func (server *Server) getGlobal(writer http.ResponseWriter, request *http.Request) {
+	var msg consensus.GlobalShareMsg
+	err := json.NewDecoder(request.Body).Decode(&msg)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("http1 getGlobal receive %s\n", msg.NodeID)
+	server.node.MsgGlobal <- &msg
+}
+
+func (server *Server) getGlobalToLocal(writer http.ResponseWriter, request *http.Request) {
+	var msg consensus.LocalMsg
+	err := json.NewDecoder(request.Body).Decode(&msg)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("http2 getGlobalToLocal receive %s\n", msg.NodeID)
+
+	server.node.MsgGlobal <- &msg
 }
 
 func send(url string, msg []byte) {

@@ -19,11 +19,13 @@ import (
 
 type Node struct {
 	NodeID        string
-	NodeTable     map[string]string // key=nodeID, value=url
+	NodeTable     map[string]map[string]string // key=nodeID, value=url
 	View          *View
 	CurrentState  *consensus.State
+	GlobalLog     *consensus.GlobalLog
 	CommittedMsgs []*consensus.RequestMsg // kinda block.
 	MsgBuffer     *MsgBuffer
+	GlobalBuffer  *GlobalBuffer
 	MsgEntrance   chan interface{}
 	MsgDelivery   chan interface{}
 	Alarm         chan bool
@@ -35,6 +37,15 @@ type Node struct {
 
 	//所属集群
 	ClusterName string
+
+	//全局消息通道
+	MsgGlobal         chan interface{}
+	MsgGlobalDelivery chan interface{}
+}
+
+type GlobalBuffer struct {
+	ReqMsg       []*consensus.GlobalShareMsg
+	consensusMsg []*consensus.LocalMsg
 }
 
 type MsgBuffer struct {
@@ -49,6 +60,12 @@ type View struct {
 	Primary string
 }
 
+var Primary_node = map[string]string{
+	"N": "N0",
+	"M": "M0",
+	"P": "P0",
+}
+
 const ResolvingTimeDuration = time.Millisecond * 1000 // 1 second.
 
 func NewNode(nodeID string, clusterName string) *Node {
@@ -57,16 +74,32 @@ func NewNode(nodeID string, clusterName string) *Node {
 	node := &Node{
 		// Hard-coded for test.
 		NodeID: nodeID,
-		NodeTable: map[string]string{
-			"N0": "localhost:1111",
-			"N1": "localhost:1112",
-			"N2": "localhost:1113",
-			"N3": "localhost:1114",
-			"N4": "localhost:1115",
+		NodeTable: map[string]map[string]string{
+			"N": {
+				"N0": "localhost:1111",
+				"N1": "localhost:1112",
+				"N2": "localhost:1113",
+				"N3": "localhost:1114",
+				"N4": "localhost:1115",
+			},
+			"M": {
+				"M0": "localhost:1116",
+				"M1": "localhost:1117",
+				"M2": "localhost:1118",
+				"M3": "localhost:1119",
+				"M4": "localhost:1120",
+			},
+			"P": {
+				"P0": "localhost:1121",
+				"P1": "localhost:1122",
+				"P2": "localhost:1123",
+				"P3": "localhost:1124",
+				"P4": "localhost:1125",
+			},
 		},
 		View: &View{
 			ID:      viewID,
-			Primary: "N0",
+			Primary: Primary_node[clusterName],
 		},
 
 		// Consensus-related struct
@@ -78,18 +111,27 @@ func NewNode(nodeID string, clusterName string) *Node {
 			PrepareMsgs:    make([]*consensus.VoteMsg, 0),
 			CommitMsgs:     make([]*consensus.VoteMsg, 0),
 		},
+		GlobalLog: &consensus.GlobalLog{
+			MsgLogs: make(map[string]map[string]*consensus.GlobalShareMsg),
+		},
+		GlobalBuffer: &GlobalBuffer{
+			ReqMsg:       make([]*consensus.GlobalShareMsg, 0),
+			consensusMsg: make([]*consensus.LocalMsg, 0),
+		},
 
 		// Channels
-		MsgEntrance: make(chan interface{}, 5),
-		MsgDelivery: make(chan interface{}, 5),
-		Alarm:       make(chan bool),
+		MsgEntrance:       make(chan interface{}, 5),
+		MsgDelivery:       make(chan interface{}, 5),
+		MsgGlobal:         make(chan interface{}, 5),
+		MsgGlobalDelivery: make(chan interface{}, 5),
+		Alarm:             make(chan bool),
 
 		// 所属集群
 		ClusterName: clusterName,
 	}
 
-	node.rsaPubKey = node.getPubKey("N", nodeID)
-	node.rsaPrivKey = node.getPivKey("N", nodeID)
+	node.rsaPubKey = node.getPubKey(clusterName, nodeID)
+	node.rsaPrivKey = node.getPivKey(clusterName, nodeID)
 
 	// Start message dispatcher
 	go node.dispatchMsg()
@@ -100,13 +142,16 @@ func NewNode(nodeID string, clusterName string) *Node {
 	// Start message resolver
 	go node.resolveMsg()
 
+	// Start solve Global message
+	go node.resolveGlobalMsg()
+
 	return node
 }
 
-func (node *Node) Broadcast(msg interface{}, path string) map[string]error {
+func (node *Node) Broadcast(cluster string, msg interface{}, path string) map[string]error {
 	errorMap := make(map[string]error)
 
-	for nodeID, url := range node.NodeTable {
+	for nodeID, url := range node.NodeTable[cluster] {
 		if nodeID == node.NodeID {
 			continue
 		}
@@ -127,7 +172,32 @@ func (node *Node) Broadcast(msg interface{}, path string) map[string]error {
 	}
 }
 
-func (node *Node) Reply(msg *consensus.ReplyMsg) error {
+// ShareLocalConsensus 本地达成共识后，主节点调用当前函数发送信息给其他集群的f+1个节点
+func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string) error {
+	errorMap := make(map[string]map[string]error)
+
+	for cluster, nodeMsg := range node.NodeTable {
+		if cluster == node.ClusterName {
+			continue
+		}
+		_cnt := 0
+		for nodeID, url := range nodeMsg {
+			_cnt++
+			if _cnt > 2 { // f=1 f+1 = 2
+				continue
+			}
+			jsonMsg, err := json.Marshal(msg)
+			if err != nil {
+				errorMap[cluster][nodeID] = err
+				continue
+			}
+			send(url+path, jsonMsg)
+		}
+	}
+	return nil
+}
+
+func (node *Node) Reply(msg *consensus.ReplyMsg, cluster string) error {
 	// Print all committed messages.
 	for _, value := range node.CommittedMsgs {
 		fmt.Printf("Committed value: %s, %d, %s, %d", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
@@ -142,7 +212,7 @@ func (node *Node) Reply(msg *consensus.ReplyMsg) error {
 	}
 
 	// 系统中没有设置用户，reply消息直接发送给主节点
-	send(node.NodeTable[node.View.Primary]+"/reply", jsonMsg)
+	send(node.NodeTable[cluster][node.View.Primary]+"/reply", jsonMsg)
 
 	// 重置节点状态等待下一次共识
 	// node.CurrentState.CurrentStage = consensus.Idle
@@ -178,7 +248,7 @@ func (node *Node) GetReq(reqMsg *consensus.RequestMsg) error {
 		// 附加主节点ID,用于数字签名验证
 		prePrepareMsg.NodeID = node.NodeID
 
-		node.Broadcast(prePrepareMsg, "/preprepare")
+		node.Broadcast(node.ClusterName, prePrepareMsg, "/preprepare")
 		LogStage("Pre-prepare", true)
 	}
 
@@ -197,7 +267,7 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg) error {
 	}
 	// fmt.Printf("get Pre\n")
 	digest, _ := hex.DecodeString(prePrepareMsg.Digest)
-	if !node.RsaVerySignWithSha256(digest, prePrepareMsg.Sign, node.getPubKey("N", prePrepareMsg.NodeID)) {
+	if !node.RsaVerySignWithSha256(digest, prePrepareMsg.Sign, node.getPubKey(node.ClusterName, prePrepareMsg.NodeID)) {
 		fmt.Println("节点签名验证失败！,拒绝执行Preprepare")
 	}
 	prePareMsg, err := node.CurrentState.PrePrepare(prePrepareMsg)
@@ -212,7 +282,7 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg) error {
 		prePareMsg.Sign = signInfo
 
 		LogStage("Pre-prepare", true)
-		node.Broadcast(prePareMsg, "/prepare")
+		node.Broadcast(node.ClusterName, prePareMsg, "/prepare")
 		LogStage("Prepare", false)
 	}
 
@@ -223,7 +293,7 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 	LogMsg(prepareMsg)
 
 	digest, _ := hex.DecodeString(prepareMsg.Digest)
-	if !node.RsaVerySignWithSha256(digest, prepareMsg.Sign, node.getPubKey("N", prepareMsg.NodeID)) {
+	if !node.RsaVerySignWithSha256(digest, prepareMsg.Sign, node.getPubKey(node.ClusterName, prepareMsg.NodeID)) {
 		fmt.Println("节点签名验证失败！,拒绝执行prepare")
 	}
 
@@ -239,7 +309,7 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 		commitMsg.Sign = signInfo
 
 		LogStage("Prepare", true)
-		node.Broadcast(commitMsg, "/commit")
+		node.Broadcast(node.ClusterName, commitMsg, "/commit")
 		LogStage("Commit", false)
 	}
 
@@ -255,7 +325,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 	LogMsg(commitMsg)
 
 	digest, _ := hex.DecodeString(commitMsg.Digest)
-	if !node.RsaVerySignWithSha256(digest, commitMsg.Sign, node.getPubKey("N", commitMsg.NodeID)) {
+	if !node.RsaVerySignWithSha256(digest, commitMsg.Sign, node.getPubKey(node.ClusterName, commitMsg.NodeID)) {
 		fmt.Println("节点签名验证失败！,拒绝执行commit")
 	}
 
@@ -266,6 +336,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 	}
 
 	if replyMsg != nil {
+
 		if committedMsg == nil {
 			return errors.New("committed message is nil, even though the reply message is not nil")
 		}
@@ -277,8 +348,32 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 		node.CommittedMsgs = append(node.CommittedMsgs, committedMsg)
 
 		LogStage("Commit", true)
-		node.Reply(replyMsg)
-		LogStage("Reply\n", true)
+		node.Reply(replyMsg, node.ClusterName)
+		LogStage("Reply", true)
+
+		if node.NodeID == node.View.Primary {
+			fmt.Printf("send consensus to Global\n")
+			// 获取消息摘要
+			msg, err := json.Marshal(committedMsg)
+			if err != nil {
+				return err
+			}
+			digest := consensus.Hash(msg)
+
+			// 节点对消息摘要进行签名
+			digestByte, _ := hex.DecodeString(digest)
+			signInfo := node.RsaSignWithSha256(digestByte, node.rsaPrivKey)
+
+			GlobalShareMsg := new(consensus.GlobalShareMsg)
+			GlobalShareMsg.RequestMsg = committedMsg
+			GlobalShareMsg.NodeID = node.NodeID
+			GlobalShareMsg.Sign = signInfo
+			GlobalShareMsg.Digest = digest
+			GlobalShareMsg.Cluster = node.ClusterName
+
+			node.ShareLocalConsensus(GlobalShareMsg, "/global")
+		}
+
 	}
 
 	return nil
@@ -327,8 +422,50 @@ func (node *Node) dispatchMsg() {
 				fmt.Println(err)
 				// TODO: send err to ErrorChannel
 			}
+		case msg := <-node.MsgGlobal:
+			err := node.routeGlobalMsg(msg)
+			if err != nil {
+				fmt.Println(err)
+				// TODO: send err to ErrorChannel
+			}
 		}
+
 	}
+}
+
+func (node *Node) routeGlobalMsg(msg interface{}) []error {
+	switch m := msg.(type) {
+	case *consensus.LocalMsg:
+		fmt.Printf("---- Receive the Local Consensus from %s for cluster %s\n", m.NodeID, m.GlobalShareMsg.Cluster)
+		// Copy buffered messages first.
+		msgs := make([]*consensus.LocalMsg, len(node.GlobalBuffer.consensusMsg))
+		copy(msgs, node.GlobalBuffer.consensusMsg)
+
+		// Append a newly arrived message.
+		msgs = append(msgs, msg.(*consensus.LocalMsg))
+
+		// Empty the buffer.
+		node.GlobalBuffer.consensusMsg = make([]*consensus.LocalMsg, 0)
+
+		// Send messages.
+		node.MsgGlobalDelivery <- msgs
+	case *consensus.GlobalShareMsg:
+		fmt.Printf("---- Receive the Global Consensus from %s %s \n", m.NodeID, m.Cluster)
+		// Copy buffered messages first.
+		msgs := make([]*consensus.GlobalShareMsg, len(node.GlobalBuffer.ReqMsg))
+		copy(msgs, node.GlobalBuffer.ReqMsg)
+
+		// Append a newly arrived message.
+		msgs = append(msgs, msg.(*consensus.GlobalShareMsg))
+
+		// Empty the buffer.
+		node.GlobalBuffer.ReqMsg = make([]*consensus.GlobalShareMsg, 0)
+
+		// Send messages.
+		node.MsgGlobalDelivery <- msgs
+	}
+
+	return nil
 }
 
 func (node *Node) routeMsg(msg interface{}) []error {
@@ -452,6 +589,30 @@ func (node *Node) routeMsgWhenAlarmed() []error {
 	return nil
 }
 
+func (node *Node) resolveGlobalMsg() {
+	for {
+		msg := <-node.MsgGlobalDelivery
+		switch msg.(type) {
+		case []*consensus.GlobalShareMsg:
+			errs := node.resolveGlobalShareMsg(msg.([]*consensus.GlobalShareMsg))
+			if len(errs) != 0 {
+				for _, err := range errs {
+					fmt.Println(err)
+				}
+				// TODO: send err to ErrorChannel
+			}
+		case []*consensus.LocalMsg:
+			errs := node.resolveLocalMsg(msg.([]*consensus.LocalMsg))
+			if len(errs) != 0 {
+				for _, err := range errs {
+					fmt.Println(err)
+				}
+				// TODO: send err to ErrorChannel
+			}
+		}
+	}
+}
+
 func (node *Node) resolveMsg() {
 	for {
 		// Get buffered messages from the dispatcher.
@@ -524,6 +685,163 @@ func (node *Node) resolveRequestMsg(msgs []*consensus.RequestMsg) []error {
 	if len(errs) != 0 {
 		return errs
 	}
+
+	return nil
+}
+
+func (node *Node) resolveGlobalShareMsg(msgs []*consensus.GlobalShareMsg) []error {
+	errs := make([]error, 0)
+
+	// Resolve messages
+	fmt.Printf("len GlobalShareMsg msg %d\n", len(msgs))
+
+	for _, reqMsg := range msgs {
+		// 收到其他组的消息，转发给本地节点
+		err := node.ShareGlobalMsgToLocal(reqMsg)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) != 0 {
+		return errs
+	}
+
+	return nil
+}
+
+func (node *Node) resolveLocalMsg(msgs []*consensus.LocalMsg) []error {
+	errs := make([]error, 0)
+
+	// Resolve messages
+	fmt.Printf("len GlobalShareMsg msg %d\n", len(msgs))
+
+	for _, reqMsg := range msgs {
+
+		// 收到本地节点发来的全局共识消息，投票
+		err := node.CommitGlobalMsgToLocal(reqMsg)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+	}
+
+	if len(errs) != 0 {
+		return errs
+	}
+
+	return nil
+}
+
+func (node *Node) GlobalConsensus(msg *consensus.LocalMsg) (*consensus.ReplyMsg, *consensus.RequestMsg, error) {
+
+	if node.GlobalLog.MsgLogs[msg.GlobalShareMsg.Cluster] == nil {
+		node.GlobalLog.MsgLogs[msg.GlobalShareMsg.Cluster] = make(map[string]*consensus.GlobalShareMsg)
+	}
+	// Append msg to its logs
+	node.GlobalLog.MsgLogs[msg.GlobalShareMsg.Cluster][msg.NodeID] = msg.GlobalShareMsg
+
+	// Print current voting status
+	fmt.Printf("[Global-Commit-Vote For %s]: %d\n", msg.GlobalShareMsg.Cluster, len(node.GlobalLog.MsgLogs[msg.GlobalShareMsg.Cluster]))
+
+	if len(node.GlobalLog.MsgLogs[msg.GlobalShareMsg.Cluster]) > 2 {
+		// This node executes the requested operation locally and gets the result.
+		result := "Executed"
+
+		// Change the stage to prepared.
+
+		return &consensus.ReplyMsg{
+			ViewID:    0,
+			Timestamp: 0,
+			ClientID:  msg.GlobalShareMsg.RequestMsg.ClientID,
+			Result:    result,
+		}, msg.GlobalShareMsg.RequestMsg, nil
+	}
+
+	return nil, nil, nil
+}
+
+// CommitGlobalMsgToLocal 收到本地节点发来的全局共识消息，投票
+func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
+	// LogMsg(reqMsg)
+
+	// LogStage(fmt.Sprintf("Consensus Process (ViewID:%d)", node.CurrentState.ViewID), false)
+	digest, _ := hex.DecodeString(reqMsg.GlobalShareMsg.Digest)
+	if !node.RsaVerySignWithSha256(digest, reqMsg.Sign, node.getPubKey(node.ClusterName, reqMsg.NodeID)) {
+		fmt.Println("节点签名验证失败！,拒绝执行Global commit")
+	}
+
+	// 如果是首次接受到这个集群的消息，广播给本地集群中的其他节点
+	_, ok := node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster]
+	if !ok {
+		fmt.Printf("首次接收到全局共识验证，广播给本地集群")
+		// 附加节点ID,用于数字签名验证
+		// 节点对消息摘要进行签名
+		digestByte, _ := hex.DecodeString(reqMsg.GlobalShareMsg.Digest)
+		signInfo := node.RsaSignWithSha256(digestByte, node.rsaPrivKey)
+		sendmsg := &consensus.LocalMsg{
+			Sign:           signInfo,
+			NodeID:         node.NodeID,
+			GlobalShareMsg: reqMsg.GlobalShareMsg,
+		}
+		node.Broadcast(node.ClusterName, sendmsg, "/GlobalToLocal")
+	}
+
+	// GlobalConsensus 会将msg存入MsgLogs中
+	replyMsg, committedMsg, err := node.GlobalConsensus(reqMsg)
+	if err != nil {
+		ErrMessage(committedMsg)
+		return err
+	}
+
+	if replyMsg != nil {
+		if committedMsg == nil {
+			return errors.New("committed message is nil, even though the reply message is not nil")
+		}
+
+		// Attach node ID to the message
+		replyMsg.NodeID = node.NodeID
+
+		// Save the last version of committed messages to node.
+		node.CommittedMsgs = append(node.CommittedMsgs, committedMsg)
+
+		LogStage("Overall consensus", true)
+		node.Reply(replyMsg, node.ClusterName)
+		LogStage("Reply\n", true)
+	}
+
+	return nil
+}
+
+func (node *Node) ShareGlobalMsgToLocal(reqMsg *consensus.GlobalShareMsg) error {
+	// LogMsg(reqMsg)
+	// LogStage(fmt.Sprintf("Consensus Process (ViewID:%d)", node.CurrentState.ViewID), false)
+	digest, _ := hex.DecodeString(reqMsg.Digest)
+	if !node.RsaVerySignWithSha256(digest, reqMsg.Sign, node.getPubKey(reqMsg.Cluster, reqMsg.NodeID)) {
+		fmt.Println("节点签名验证失败！,拒绝执行Global commit")
+	}
+
+	// 节点对消息摘要进行签名
+	signInfo := node.RsaSignWithSha256(digest, node.rsaPrivKey)
+	// LogStage(fmt.Sprintf("Consensus Process (ViewID:%d)", node.CurrentState.ViewID), false)
+
+	// Send getPrePrepare message
+
+	// 附加节点ID,用于数字签名验证
+	sendMsg := &consensus.LocalMsg{
+		Sign:           signInfo,
+		NodeID:         node.NodeID,
+		GlobalShareMsg: reqMsg,
+	}
+
+	// 将消息存入log中
+	if node.GlobalLog.MsgLogs[reqMsg.Cluster] == nil {
+		node.GlobalLog.MsgLogs[reqMsg.Cluster] = make(map[string]*consensus.GlobalShareMsg)
+	}
+	node.GlobalLog.MsgLogs[reqMsg.Cluster][reqMsg.NodeID] = reqMsg
+
+	node.Broadcast(node.ClusterName, sendMsg, "/GlobalToLocal")
+	LogStage("GlobalToLocal", true)
 
 	return nil
 }

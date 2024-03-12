@@ -14,6 +14,10 @@ type State struct {
 	CurrentStage   Stage
 }
 
+type GlobalLog struct {
+	MsgLogs map[string]map[string]*GlobalShareMsg // cluster - nodeid - msg
+}
+
 type MsgLogs struct {
 	ReqMsg      *RequestMsg
 	PrepareMsgs map[string]*VoteMsg

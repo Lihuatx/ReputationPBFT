@@ -1,10 +1,37 @@
 import subprocess
+import sys
 # 定义第五个终端要执行的PowerShell命令
+
 ps_command = """
 $headers = @{ "Content-Type" = "application/json" }
 $body = '{"clientID":"ahnhwi","operation":"GetMyName","timestamp":859381532}'
 $response = Invoke-WebRequest -Uri "http://localhost:1111/req" -Method POST -Headers $headers -Body $body
 """
 
+ps_command2 = """
+$headers = @{ "Content-Type" = "application/json" }
+$body = '{"clientID":"ahnhwi","operation":"GetMyName","timestamp":859381532}'
+$response = Invoke-WebRequest -Uri "http://localhost:1116/req" -Method POST -Headers $headers -Body $body
+"""
+
+ps_command3 = """
+$headers = @{ "Content-Type" = "application/json" }
+$body = '{"clientID":"ahnhwi","operation":"GetMyName","timestamp":859381532}'
+$response = Invoke-WebRequest -Uri "http://localhost:1121/req" -Method POST -Headers $headers -Body $body
+"""
+
+num = int(sys.argv[1])
+if num < 4:
+    if num == 1:
+        subprocess.Popen(['powershell', '-Command', ps_command])
+    elif num == 2:
+        subprocess.Popen(['powershell', '-Command', ps_command2])
+    else:
+        subprocess.Popen(['powershell', '-Command', ps_command3])
+else:
+    subprocess.Popen(['powershell', '-Command', ps_command])
+    subprocess.Popen(['powershell', '-Command', ps_command2])
+    subprocess.Popen(['powershell', '-Command', ps_command3])
+
 # 在新的PowerShell窗口中执行第五个命令
-subprocess.Popen(['powershell', '-Command', ps_command])
+# subprocess.Popen(['powershell', '-Command', ps_command])

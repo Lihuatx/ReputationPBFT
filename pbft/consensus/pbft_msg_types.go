@@ -21,7 +21,7 @@ type PrePrepareMsg struct {
 	Digest     string      `json:"digest"`
 	NodeID     string      `json:"nodeID"` //添加nodeID
 	RequestMsg *RequestMsg `json:"requestMsg"`
-	Sign       []byte      //添加sign
+	Sign       []byte      `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
 }
 
 type VoteMsg struct {
@@ -30,7 +30,20 @@ type VoteMsg struct {
 	Digest     string `json:"digest"`
 	NodeID     string `json:"nodeID"`
 	MsgType    `json:"msgType"`
-	Sign       []byte //添加sign
+	Sign       []byte `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+}
+
+type GlobalShareMsg struct {
+	Cluster    string      `json:"ClusterName"`
+	NodeID     string      `json:"nodeID"`
+	RequestMsg *RequestMsg `json:"requestMsg"`
+	Digest     string      `json:"digest"`
+	Sign       []byte      `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+}
+type LocalMsg struct {
+	GlobalShareMsg *GlobalShareMsg `json:"globalShareMsg"`
+	NodeID         string          `json:"nodeID"`
+	Sign           []byte          `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
 }
 
 type MsgType int
