@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-
 	"simple_pbft/pbft/network"
 )
 

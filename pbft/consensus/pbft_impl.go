@@ -15,7 +15,8 @@ type State struct {
 }
 
 type GlobalLog struct {
-	MsgLogs map[string]map[string]*GlobalShareMsg // cluster - nodeid - msg
+	MsgLogs  map[string]map[int64]*RequestMsg // cluster - ViewID - msg
+	VoteLogs map[string]map[int64]string      // cluster - ViewID - voteNodeID
 }
 
 type MsgLogs struct {

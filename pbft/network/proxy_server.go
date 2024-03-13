@@ -106,7 +106,7 @@ func (server *Server) getGlobal(writer http.ResponseWriter, request *http.Reques
 		fmt.Println(err)
 		return
 	}
-	fmt.Printf("http1 getGlobal receive %s\n", msg.NodeID)
+	// fmt.Printf("http1 getGlobal receive %s\n", msg.NodeID)
 	server.node.MsgGlobal <- &msg
 }
 
@@ -117,8 +117,7 @@ func (server *Server) getGlobalToLocal(writer http.ResponseWriter, request *http
 		fmt.Println(err)
 		return
 	}
-	fmt.Printf("http2 getGlobalToLocal receive %s\n", msg.NodeID)
-
+	// fmt.Printf("http2 getGlobalToLocal receive %s\n", msg.NodeID)
 	server.node.MsgGlobal <- &msg
 }
 

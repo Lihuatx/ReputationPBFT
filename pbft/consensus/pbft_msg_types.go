@@ -39,7 +39,9 @@ type GlobalShareMsg struct {
 	RequestMsg *RequestMsg `json:"requestMsg"`
 	Digest     string      `json:"digest"`
 	Sign       []byte      `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+	ViewID     int64       `json:"viewID"`
 }
+
 type LocalMsg struct {
 	GlobalShareMsg *GlobalShareMsg `json:"globalShareMsg"`
 	NodeID         string          `json:"nodeID"`
@@ -52,3 +54,5 @@ const (
 	PrepareMsg MsgType = iota
 	CommitMsg
 )
+
+var GlobalViewID int
