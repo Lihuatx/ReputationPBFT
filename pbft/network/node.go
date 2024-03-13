@@ -28,10 +28,10 @@ type Node struct {
 	MsgEntrance   chan interface{}
 	MsgDelivery   chan interface{}
 	Alarm         chan bool
-
 	// 全局消息日志和临时消息缓冲区
 	GlobalLog    *consensus.GlobalLog
 	GlobalBuffer *GlobalBuffer
+	GlobalViewID int64
 	//RSA私钥
 	rsaPrivKey []byte
 	//RSA公钥
@@ -84,7 +84,6 @@ const ResolvingTimeDuration = time.Millisecond * 1000 // 1 second.
 
 func NewNode(nodeID string, clusterName string) *Node {
 	const viewID = 10000000000 // temporary.
-	consensus.GlobalViewID = viewID
 	node := &Node{
 		// Hard-coded for test.
 		NodeID: nodeID,
@@ -127,7 +126,7 @@ func NewNode(nodeID string, clusterName string) *Node {
 		},
 		GlobalLog: &consensus.GlobalLog{
 			MsgLogs:  make(map[string]map[int64]*consensus.RequestMsg),
-			VoteLogs: make(map[string]map[int64]string),
+			VoteLogs: make(map[string]map[int64]map[string]bool),
 		},
 		GlobalBuffer: &GlobalBuffer{
 			ReqMsg:       make([]*consensus.GlobalShareMsg, 0),
@@ -142,7 +141,8 @@ func NewNode(nodeID string, clusterName string) *Node {
 		Alarm:             make(chan bool),
 
 		// 所属集群
-		ClusterName: clusterName,
+		ClusterName:  clusterName,
+		GlobalViewID: viewID,
 	}
 
 	node.rsaPubKey = node.getPubKey(clusterName, nodeID)
@@ -213,24 +213,50 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 	return nil
 }
 
-func (node *Node) Reply(msg *consensus.ReplyMsg, cluster string) error {
-	// Print all committed messages.
-	for _, value := range node.CommittedMsgs {
-		fmt.Printf("Committed value: %s, %d, %s, %d", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
+func (node *Node) Reply(ViewID int64) (bool, int64) {
+	g := []string{"N", "M"}
+	for _, value := range g {
+		_, ok := node.GlobalLog.MsgLogs[value]
+		if !ok {
+			fmt.Printf("1\n")
+			return false, 0
+		}
 	}
-	fmt.Print("\n")
+	for _, value := range g {
+		_, ok := node.GlobalLog.MsgLogs[value][ViewID]
+		if !ok {
+			fmt.Printf("2 %s\n", value)
+			return false, 0
+		}
+	}
+	for _, value := range g {
 
-	node.View.ID++
+		if !node.GlobalLog.MsgLogs[value][ViewID].Result {
+			fmt.Printf("3\n")
 
-	jsonMsg, err := json.Marshal(msg)
-	if err != nil {
-		return err
+			return false, 0
+		}
+
+	}
+	for _, value := range g {
+		msg := node.GlobalLog.MsgLogs[value][ViewID]
+		// Print all committed messages.
+		fmt.Printf("Committed value: %s, %d, %s, %d", msg.ClientID, msg.Timestamp, msg.Operation, msg.SequenceID)
+		fmt.Print("\n")
+		node.CommittedMsgs = append(node.CommittedMsgs, msg)
 	}
 
-	// 系统中没有设置用户，reply消息直接发送给主节点
-	send(node.NodeTable[cluster][node.View.Primary]+"/reply", jsonMsg)
+	node.GlobalViewID++
+	/*
+		jsonMsg, err := json.Marshal(msg)
+		if err != nil {
+			return err
+		}
 
-	return nil
+		// 系统中没有设置用户，reply消息直接发送给主节点
+		send(node.NodeTable[cluster][node.View.Primary]+"/reply", jsonMsg)
+	*/
+	return true, ViewID + 1
 }
 
 // GetReq can be called when the node's CurrentState is nil.
@@ -359,10 +385,10 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 		replyMsg.NodeID = node.NodeID
 
 		// Save the last version of committed messages to node.
-		node.CommittedMsgs = append(node.CommittedMsgs, committedMsg)
+		// node.CommittedMsgs = append(node.CommittedMsgs, committedMsg)
 
 		LogStage("Commit", true)
-		fmt.Printf("ViewID :%d 达成本地共识，存入待执行缓存池\n")
+		fmt.Printf("ViewID :%d 达成本地共识，存入待执行缓存池\n", node.View.ID)
 
 		// node.Reply(replyMsg, node.ClusterName)
 		// LogStage("Reply", true)
@@ -370,6 +396,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 			node.GlobalLog.MsgLogs[node.ClusterName] = make(map[int64]*consensus.RequestMsg)
 		}
 		// Append msg to its logs
+		committedMsg.Result = true
 		node.GlobalLog.MsgLogs[node.ClusterName][node.View.ID] = committedMsg
 
 		if node.NodeID == node.View.Primary { // 本地共识结束后，主节点将本地达成共识的请求发送至其他集群的主节点
@@ -384,7 +411,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 			// 节点对消息摘要进行签名
 			digestByte, _ := hex.DecodeString(digest)
 			signInfo := node.RsaSignWithSha256(digestByte, node.rsaPrivKey)
-
+			committedMsg.Result = false
 			GlobalShareMsg := new(consensus.GlobalShareMsg)
 			GlobalShareMsg.RequestMsg = committedMsg
 			GlobalShareMsg.NodeID = node.NodeID
@@ -394,9 +421,9 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 			GlobalShareMsg.ViewID = node.View.ID
 			node.ShareLocalConsensus(GlobalShareMsg, "/global")
 		}
-	}
 
-	node.View.ID++
+		node.View.ID++
+	}
 
 	return nil
 }
@@ -771,25 +798,19 @@ func (node *Node) resolveLocalMsg(msgs []*consensus.LocalMsg) []error {
 	return nil
 }
 
-func calculateVote(q []bool) int {
-	voteNum := 0
-	for _, vote := range q {
-		if vote {
-			voteNum++
-		}
-	}
-	return voteNum
-}
-
 func (node *Node) GlobalConsensus(msg *consensus.LocalMsg) (*consensus.ReplyMsg, *consensus.RequestMsg, error) {
+	_, ok := node.GlobalLog.VoteLogs[msg.GlobalShareMsg.Cluster][msg.GlobalShareMsg.ViewID]
 
-	voteID, _ := getLastDigit(msg.NodeID)
-	// Append msg to its logs
+	if !ok {
+		node.GlobalLog.VoteLogs[msg.GlobalShareMsg.Cluster][msg.GlobalShareMsg.ViewID] = make(map[string]bool)
+	}
+	node.GlobalLog.VoteLogs[msg.GlobalShareMsg.Cluster][msg.GlobalShareMsg.ViewID][msg.NodeID] = true // Vote for this msg
 
+	voteNum := len(node.GlobalLog.VoteLogs[msg.GlobalShareMsg.Cluster][msg.GlobalShareMsg.ViewID])
 	// Print current voting status
-	fmt.Printf("[Global-Commit-Vote For %s]: %d\n", msg.GlobalShareMsg.Cluster, len(node.GlobalLog.MsgLogs[msg.GlobalShareMsg.Cluster]))
+	fmt.Printf("[Global-Commit-Vote For %s]: %d\n", msg.GlobalShareMsg.Cluster, voteNum)
 
-	if calculateVote(msg.GlobalShareMsg.VoteNode) > 2 {
+	if voteNum > 2 {
 		// This node executes the requested operation locally and gets the result.
 		result := "Executed"
 
@@ -833,6 +854,7 @@ func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
 		// 存入待执行缓冲区
 		if node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster] == nil {
 			node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster] = make(map[int64]*consensus.RequestMsg)
+			node.GlobalLog.VoteLogs[reqMsg.GlobalShareMsg.Cluster] = make(map[int64]map[string]bool)
 		}
 		// Append msg to its logs
 		node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster][reqMsg.GlobalShareMsg.ViewID] = reqMsg.GlobalShareMsg.RequestMsg
@@ -856,13 +878,13 @@ func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
 
 		// Attach node ID to the message
 		replyMsg.NodeID = node.NodeID
-
+		node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster][reqMsg.GlobalShareMsg.ViewID].Result = true
 		// Save the last version of committed messages to node.
-		node.CommittedMsgs = append(node.CommittedMsgs, committedMsg)
-
+		// node.CommittedMsgs = append(node.CommittedMsgs, committedMsg)
+		fmt.Printf("stage %s %d\n", reqMsg.GlobalShareMsg.Cluster, reqMsg.GlobalShareMsg.ViewID)
 		LogStage("Overall consensus", true)
-		node.Reply(replyMsg, node.ClusterName)
-		LogStage("Reply\n", true)
+		node.Reply(node.GlobalViewID)
+		// LogStage("Reply\n", true)
 	}
 
 	return nil
@@ -892,6 +914,7 @@ func (node *Node) ShareGlobalMsgToLocal(reqMsg *consensus.GlobalShareMsg) error 
 	// 将消息存入log中
 	if node.GlobalLog.MsgLogs[reqMsg.Cluster] == nil {
 		node.GlobalLog.MsgLogs[reqMsg.Cluster] = make(map[int64]*consensus.RequestMsg)
+		node.GlobalLog.VoteLogs[reqMsg.Cluster] = make(map[int64]map[string]bool)
 	}
 	node.GlobalLog.MsgLogs[reqMsg.Cluster][reqMsg.ViewID] = reqMsg.RequestMsg
 
