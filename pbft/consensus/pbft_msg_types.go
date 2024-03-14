@@ -5,7 +5,7 @@ type RequestMsg struct {
 	ClientID   string `json:"clientID"`
 	Operation  string `json:"operation"`
 	SequenceID int64  `json:"sequenceID"`
-	Result     bool   `json:"Result"`
+	// Result     bool   `json:"Result"`
 }
 
 type ReplyMsg struct {
