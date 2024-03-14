@@ -4,19 +4,19 @@ import sys
 
 ps_command = """
 $headers = @{ "Content-Type" = "application/json" }
-$body = '{"clientID":"ahnhwi","operation":"GetMyName","timestamp":859381532}'
+$body = '{"clientID":"ahnhwi","operation":"SendMes1","timestamp":859381532}'
 $response = Invoke-WebRequest -Uri "http://localhost:1111/req" -Method POST -Headers $headers -Body $body
 """
 
 ps_command2 = """
 $headers = @{ "Content-Type" = "application/json" }
-$body = '{"clientID":"ahnhwi","operation":"GetMyName","timestamp":859381532}'
+$body = '{"clientID":"ahnhwi","operation":"SendMes2","timestamp":859381532}'
 $response = Invoke-WebRequest -Uri "http://localhost:1116/req" -Method POST -Headers $headers -Body $body
 """
 
 ps_command3 = """
 $headers = @{ "Content-Type" = "application/json" }
-$body = '{"clientID":"ahnhwi","operation":"GetMyName","timestamp":859381532}'
+$body = '{"clientID":"ahnhwi","operation":"SendMes3","timestamp":859381532}'
 $response = Invoke-WebRequest -Uri "http://localhost:1121/req" -Method POST -Headers $headers -Body $body
 """
 

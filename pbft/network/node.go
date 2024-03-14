@@ -466,7 +466,7 @@ func (node *Node) dispatchMsg() {
 func (node *Node) routeGlobalMsg(msg interface{}) []error {
 	switch m := msg.(type) {
 	case *consensus.GlobalShareMsg:
-		fmt.Printf("---- Receive the Global Consensus from %s\n", m.NodeID)
+		fmt.Printf("---- Receive the Global Consensus from %s for Global ID:%d\n", m.NodeID, m.ViewID)
 		// Copy buffered messages first.
 		msgs := make([]*consensus.GlobalShareMsg, len(node.GlobalBuffer.ReqMsg))
 		copy(msgs, node.GlobalBuffer.ReqMsg)
@@ -480,7 +480,7 @@ func (node *Node) routeGlobalMsg(msg interface{}) []error {
 		// Send messages.
 		node.MsgGlobalDelivery <- msgs
 	case *consensus.LocalMsg:
-		fmt.Printf("---- Receive the Local Consensus from %s for cluster %s\n", m.NodeID, m.GlobalShareMsg.Cluster)
+		fmt.Printf("---- Receive the Local Consensus from %s for cluster %s Global ID:%d\n", m.NodeID, m.GlobalShareMsg.Cluster, m.GlobalShareMsg.ViewID)
 		// Copy buffered messages first.
 		msgs := make([]*consensus.LocalMsg, len(node.GlobalBuffer.consensusMsg))
 		copy(msgs, node.GlobalBuffer.consensusMsg)
@@ -596,6 +596,7 @@ func (node *Node) routeMsg(msg interface{}) []error {
 }
 
 func (node *Node) routeMsgWhenAlarmed() []error {
+	fmt.Printf("                                                                View ID %d,Global ID %d\n", node.View.ID, node.GlobalViewID)
 	if node.CurrentState == nil || node.CurrentState.CurrentStage == consensus.Committed {
 		// Check ReqMsgs, send them.
 		if len(node.MsgBuffer.ReqMsgs) != 0 {
@@ -816,22 +817,31 @@ func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
 		fmt.Println("节点签名验证失败！,拒绝执行Global commit")
 	}
 
-	// 如果是首次接受到这个集群的消息，广播给本地集群中的其他节点
-	_, ok := node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster]
-	if !ok {
-		// 节点对消息摘要进行签名
+	// 存入待执行缓冲区
+	if node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster] == nil {
+		node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster] = make(map[int64]*consensus.RequestMsg)
+		node.GlobalLog.VoteLogs[reqMsg.GlobalShareMsg.Cluster] = make(map[int64]map[string]bool)
+	}
+	// Append msg to its logs
+	node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster][reqMsg.GlobalShareMsg.ViewID] = reqMsg.GlobalShareMsg.RequestMsg
 
-		// node.Broadcast(node.ClusterName, sendmsg, "/GlobalToLocal")
-		// 存入待执行缓冲区
-		if node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster] == nil {
-			node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster] = make(map[int64]*consensus.RequestMsg)
-			node.GlobalLog.VoteLogs[reqMsg.GlobalShareMsg.Cluster] = make(map[int64]map[string]bool)
-		}
-		// Append msg to its logs
-		node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster][reqMsg.GlobalShareMsg.ViewID] = reqMsg.GlobalShareMsg.RequestMsg
-	} else { // 如果是首次接受到这个集群的这个viewID的消息，广播给本地集群中的其他节点
-		_, ok := node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster][reqMsg.GlobalShareMsg.ViewID]
-		if !ok {
+	// 如果是主节点收到其他集群的全局共享消息，需要检查本地有正在进行的共识或收到客户端的消息或者本地共识是否已完成，如果都没有需要发送一个空白消息进行本地共识
+	if node.NodeID == node.View.Primary {
+		// 检查本地有没有正在进行的共识？
+		if node.CurrentState == nil || node.CurrentState.CurrentStage == consensus.Committed {
+			// 检查有没有收到客户端的消息
+			if len(node.MsgBuffer.ReqMsgs) == 0 && len(node.MsgEntrance) == 0 && len(node.MsgDelivery) == 0 {
+				// 检查本地的共识是否已完成
+				_, ok := node.GlobalLog.MsgLogs[node.ClusterName][reqMsg.GlobalShareMsg.ViewID]
+				if !ok && reqMsg.GlobalShareMsg.RequestMsg.Operation != "Empty" {
+					fmt.Printf("Start Empty consensus for ViewID %d\n", reqMsg.GlobalShareMsg.ViewID)
+					var sendmsg consensus.RequestMsg
+					sendmsg.ClientID = node.NodeID
+					sendmsg.Operation = "Empty"
+					sendmsg.Timestamp = 0
+					node.MsgEntrance <- &sendmsg
+				}
+			}
 		}
 	}
 
@@ -905,7 +915,7 @@ func (node *Node) ShareGlobalMsgToLocal(reqMsg *consensus.GlobalShareMsg) error 
 			// 检查有没有收到客户端的消息
 			if len(node.MsgBuffer.ReqMsgs) == 0 && len(node.MsgEntrance) == 0 && len(node.MsgDelivery) == 0 {
 				_, ok := node.GlobalLog.MsgLogs[node.ClusterName][reqMsg.ViewID]
-				if !ok && reqMsg.ViewID >= node.View.ID {
+				if !ok {
 					fmt.Printf("Start Empty consensus for ViewID %d\n", reqMsg.ViewID)
 					var msg consensus.RequestMsg
 					msg.ClientID = node.NodeID

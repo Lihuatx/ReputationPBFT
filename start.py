@@ -23,19 +23,19 @@ for exe, arg1, arg2 in commands:
     command = f'start cmd /k "{exe}" {arg1} {arg2}'
     subprocess.Popen(command, shell=True)
 
-time.sleep(3)
+time.sleep(8)
 
 # 定义第五个终端要执行的PowerShell命令
 ps_command = """
 $headers = @{ "Content-Type" = "application/json" }
-$body = '{"clientID":"ahnhwi","operation":"GetMyName","timestamp":859381532}'
+$body = '{"clientID":"ahnhwi","operation":"SendMes1","timestamp":859381532}'
 $response = Invoke-WebRequest -Uri "http://localhost:1111/req" -Method POST -Headers $headers -Body $body
 """
 
 # 定义第五个终端要执行的PowerShell命令
 ps_command2 = """
 $headers = @{ "Content-Type" = "application/json" }
-$body = '{"clientID":"ahnhwi","operation":"ChangeMyName","timestamp":859381532}'
+$body = '{"clientID":"ahnhwi","operation":"SendMes2","timestamp":859381532}'
 $response = Invoke-WebRequest -Uri "http://localhost:1116/req" -Method POST -Headers $headers -Body $body
 """
 
