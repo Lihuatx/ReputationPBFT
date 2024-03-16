@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import time
+import datetime
 # 定义第五个终端要执行的PowerShell命令
 
 ps_command = """
@@ -30,6 +31,7 @@ if num < 4:
     else:
         subprocess.Popen(['powershell', '-Command', ps_command3])
 else:
+    print(datetime.datetime.now())
     for i in range(10):
         # 动态构建带有当前循环i值的PowerShell命令
         ps_command = f"""

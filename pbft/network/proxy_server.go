@@ -50,6 +50,9 @@ func (server *Server) getReq(writer http.ResponseWriter, request *http.Request) 
 		fmt.Println(err)
 		return
 	}
+	// 保存请求的URL到RequestMsg中
+	msg.URL = request.URL.String()
+
 	fmt.Printf("\nhttp get RequestMsg op : %s\n", msg.Operation)
 	server.node.MsgEntrance <- &msg
 }

@@ -243,6 +243,8 @@ func (node *Node) Reply(ViewID int64) (bool, int64) {
 		node.CommittedMsgs = append(node.CommittedMsgs, msg)
 	}
 	fmt.Print("\n\n\n\n\n")
+	testTime := time.Now()
+	fmt.Printf("程序运行了 %s\n", testTime)
 	node.GlobalViewID++
 	/*
 		jsonMsg, err := json.Marshal(msg)
