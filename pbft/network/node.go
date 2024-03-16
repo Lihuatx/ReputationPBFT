@@ -37,7 +37,7 @@ type Node struct {
 	PrepreMsgBufLock sync.Mutex
 	PreMsgBufLock    sync.Mutex
 
-	MsgDeliveryLock sync.Mutex
+	PendingMsgsLock sync.Mutex
 
 	GlobalViewIDLock sync.Mutex
 
@@ -64,6 +64,7 @@ type MsgBuffer struct {
 	PrePrepareMsgs []*consensus.PrePrepareMsg
 	PrepareMsgs    []*consensus.VoteMsg
 	CommitMsgs     []*consensus.VoteMsg
+	PendingMsgs    []*consensus.RequestMsg
 }
 
 type View struct {
@@ -122,6 +123,7 @@ func NewNode(nodeID string, clusterName string) *Node {
 			PrePrepareMsgs: make([]*consensus.PrePrepareMsg, 0),
 			PrepareMsgs:    make([]*consensus.VoteMsg, 0),
 			CommitMsgs:     make([]*consensus.VoteMsg, 0),
+			PendingMsgs:    make([]*consensus.RequestMsg, 0),
 		},
 		GlobalLog: &consensus.GlobalLog{
 			MsgLogs: make(map[string]map[int64]*consensus.RequestMsg),
@@ -194,7 +196,7 @@ func (node *Node) Broadcast(cluster string, msg interface{}, path string) map[st
 	}
 }
 
-// ShareLocalConsensus 本地达成共识后，主节点调用当前函数发送信息给其他集群的f+1个节点
+// ShareLocalConsensus 本地达成共识后，主节点调用当前函数发送信息给其他集群的主节点节点
 func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string) error {
 	errorMap := make(map[string]map[string]error)
 
@@ -211,50 +213,33 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 		fmt.Printf("Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
 		send(url+path, jsonMsg)
 
-		url = nodeMsg[cluster+"1"]
-		fmt.Printf("Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
-		send(url+path, jsonMsg)
+		//url = nodeMsg[cluster+"1"]
+		//fmt.Printf("Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
+		//send(url+path, jsonMsg)
 
 	}
 	return nil
 }
 
-func (node *Node) Reply(ViewID int64) (bool, int64) {
-	for _, value := range Allcluster { //检查是否已经收到所有集群的消息
-		_, ok := node.GlobalLog.MsgLogs[value]
-		if !ok {
-			fmt.Printf("1\n")
-			return false, 0
-		}
-	}
-	for _, value := range Allcluster { //检查是否已经收到所有集群当前阶段的可执行的消息
-		_, ok := node.GlobalLog.MsgLogs[value][ViewID]
-		if !ok {
-			fmt.Printf("2 %s\n", value)
-			return false, 0
-		}
-	}
+func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg) (bool, int64) {
 	fmt.Printf("Global View ID : %d 达成全局共识\n", node.GlobalViewID)
-	for _, value := range Allcluster {
-		msg := node.GlobalLog.MsgLogs[value][ViewID]
-		// Print all committed messages.
-		fmt.Printf("Committed value: %s, %d, %s, %d", msg.ClientID, msg.Timestamp, msg.Operation, msg.SequenceID)
 
-		node.CommittedMsgs = append(node.CommittedMsgs, msg)
+	node.CommittedMsgs = append(node.CommittedMsgs, ReplyMsg)
+	for _, value := range node.CommittedMsgs {
+		fmt.Printf("Committed value: %s, %d, %s, %d", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
 	}
-	fmt.Print("\n\n\n\n\n")
-	testTime := time.Now()
-	fmt.Printf("程序运行了 %s\n", testTime)
-	node.GlobalViewID++
-	/*
-		jsonMsg, err := json.Marshal(msg)
-		if err != nil {
-			return err
-		}
+	fmt.Print("\n\n")
 
-		// 系统中没有设置用户，reply消息直接发送给主节点
-		send(node.NodeTable[cluster][node.View.Primary]+"/reply", jsonMsg)
-	*/
+	node.GlobalViewID++
+
+	jsonMsg, err := json.Marshal(ReplyMsg)
+	if err != nil {
+		return false, ViewID
+	}
+
+	// 系统中没有设置用户，reply消息直接发送给主节点
+	send("127.0.0.1:5000/reply", jsonMsg)
+
 	return true, ViewID + 1
 }
 
@@ -389,33 +374,48 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 		LogStage("Commit", true)
 		fmt.Printf("ViewID :%d 达成本地共识，存入待执行缓存池\n", node.View.ID)
 
-		// node.Reply(replyMsg, node.ClusterName)
 		// LogStage("Reply", true)
 
 		// Append msg to its logs
-		node.GlobalLog.MsgLogs[node.ClusterName][node.View.ID] = committedMsg
+		node.PendingMsgsLock.Lock()
+		node.MsgBuffer.PendingMsgs = append(node.MsgBuffer.PendingMsgs, committedMsg)
+		node.PendingMsgsLock.Unlock()
 
 		if node.NodeID == node.View.Primary { // 本地共识结束后，主节点将本地达成共识的请求发送至其他集群的主节点
-			fmt.Printf("send consensus to Global\n")
-			// 获取消息摘要
-			msg, err := json.Marshal(committedMsg)
-			if err != nil {
-				return err
+			if Allcluster[node.GlobalViewID%int64(len(Allcluster))] == node.ClusterName { // 如果轮询到本地主节点作为代理人，发送消息给全局和本地
+				fmt.Printf("send consensus to Global\n")
+				// 获取消息摘要
+				msg, err := json.Marshal(committedMsg)
+				if err != nil {
+					return err
+				}
+				digest := consensus.Hash(msg)
+				//取出存在buffer中的消息，发送出去全局共识
+				node.PendingMsgsLock.Lock()
+				node.MsgBuffer.PendingMsgs = node.MsgBuffer.PendingMsgs[1:]
+				node.PendingMsgsLock.Unlock()
+				// 节点对消息摘要进行签名
+				digestByte, _ := hex.DecodeString(digest)
+				signInfo := node.RsaSignWithSha256(digestByte, node.rsaPrivKey)
+				// committedMsg.Result = false
+				GlobalShareMsg := new(consensus.GlobalShareMsg)
+				GlobalShareMsg.RequestMsg = committedMsg
+				GlobalShareMsg.NodeID = node.NodeID
+				GlobalShareMsg.Sign = signInfo
+				GlobalShareMsg.Digest = digest
+				GlobalShareMsg.Cluster = node.ClusterName
+				GlobalShareMsg.ViewID = node.GlobalViewID
+				node.ShareLocalConsensus(GlobalShareMsg, "/global")
+				// 附加节点ID,用于数字签名验证
+				sendMsg := &consensus.LocalMsg{
+					Sign:           signInfo,
+					NodeID:         node.NodeID,
+					GlobalShareMsg: GlobalShareMsg,
+				}
+				node.Broadcast(node.ClusterName, sendMsg, "/GlobalToLocal")
+				// 达成本地共识，进行全局共识的排序和执行
+				node.Reply(node.GlobalViewID, committedMsg)
 			}
-			digest := consensus.Hash(msg)
-
-			// 节点对消息摘要进行签名
-			digestByte, _ := hex.DecodeString(digest)
-			signInfo := node.RsaSignWithSha256(digestByte, node.rsaPrivKey)
-			// committedMsg.Result = false
-			GlobalShareMsg := new(consensus.GlobalShareMsg)
-			GlobalShareMsg.RequestMsg = committedMsg
-			GlobalShareMsg.NodeID = node.NodeID
-			GlobalShareMsg.Sign = signInfo
-			GlobalShareMsg.Digest = digest
-			GlobalShareMsg.Cluster = node.ClusterName
-			GlobalShareMsg.ViewID = node.View.ID
-			node.ShareLocalConsensus(GlobalShareMsg, "/global")
 
 			node.View.ID++
 
@@ -457,12 +457,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 				node.CurrentState.CurrentStage = consensus.Committed
 			}
 		}
-		// 达成本地共识，检查能否进行全局共识的排序和执行
-		node.GlobalViewIDLock.Lock()
-		if node.GlobalViewID == commitMsg.ViewID {
-			node.Reply(node.GlobalViewID)
-		}
-		node.GlobalViewIDLock.Unlock()
+
 	}
 	return nil
 }
@@ -481,10 +476,10 @@ func (node *Node) createStateForNewConsensus(goOn bool) error {
 	}
 	// Get the last sequence ID
 	var lastSequenceID int64
-	if node.View.ID == viewID {
+	if len(node.CommittedMsgs) == 0 {
 		lastSequenceID = -1
 	} else {
-		lastSequenceID = node.GlobalLog.MsgLogs[node.ClusterName][node.View.ID-1].SequenceID
+		lastSequenceID = node.CommittedMsgs[len(node.CommittedMsgs)-1].SequenceID
 	}
 
 	// Create a new state for this new consensus process in the Primary
@@ -846,7 +841,7 @@ func (node *Node) resolveGlobalShareMsg(msgs []*consensus.GlobalShareMsg) []erro
 	fmt.Printf("len GlobalShareMsg msg %d\n", len(msgs))
 
 	for _, reqMsg := range msgs {
-		// 收到其他组的消息，转发给本地节点
+		// 收到其他组的消息，转发给其他主节点节点
 		err := node.ShareGlobalMsgToLocal(reqMsg)
 		if err != nil {
 			errs = append(errs, err)
@@ -885,7 +880,7 @@ func (node *Node) resolveLocalMsg(msgs []*consensus.LocalMsg) []error {
 
 func (node *Node) GlobalConsensus(msg *consensus.LocalMsg) (*consensus.ReplyMsg, *consensus.RequestMsg, error) {
 	// Print current voting status
-	fmt.Printf("-----Global-Commit-Save For %s----\n", msg.GlobalShareMsg.Cluster)
+	fmt.Printf("-----Global-Commit-Execute For %s----\n", msg.GlobalShareMsg.Cluster)
 
 	// This node executes the requested operation locally and gets the result.
 	result := "Executed"
@@ -901,7 +896,7 @@ func (node *Node) GlobalConsensus(msg *consensus.LocalMsg) (*consensus.ReplyMsg,
 	// return nil, nil, nil
 }
 
-// CommitGlobalMsgToLocal 收到本地节点发来的全局共识消息
+// CommitGlobalMsgToLocal 收到本地主节点发来的全局共识消息
 func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
 	// LogMsg(reqMsg)
 
@@ -909,34 +904,12 @@ func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
 	if !node.RsaVerySignWithSha256(digest, reqMsg.Sign, node.getPubKey(node.ClusterName, reqMsg.NodeID)) {
 		fmt.Println("节点签名验证失败！,拒绝执行Global commit")
 	}
-
-	// Append msg to its logs
-	node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster][reqMsg.GlobalShareMsg.ViewID] = reqMsg.GlobalShareMsg.RequestMsg
-
-	// 如果是主节点收到其他集群的全局共享消息，需要检查本地有正在进行的共识或收到客户端的消息或者本地共识是否已完成，如果都没有需要发送一个空白消息进行本地共识
-	if node.NodeID == node.View.Primary {
-		// 检查本地有没有正在进行的共识？
-		if node.CurrentState == nil || node.CurrentState.CurrentStage == consensus.Committed {
-			// 检查有没有收到客户端的消息
-			node.ReqMsgBufLock.Lock()
-			node.MsgDeliveryLock.Lock()
-			if len(node.MsgBuffer.ReqMsgs) == 0 && len(node.MsgEntrance) == 0 && len(node.MsgDelivery) == 0 {
-				//_, ok := node.GlobalLog.MsgLogs[node.ClusterName][reqMsg.GlobalShareMsg.ViewID]
-				/*
-					if !ok && reqMsg.GlobalShareMsg.RequestMsg.Operation != "Empty" && node.GlobalLog.MsgLogs[reqMsg.GlobalShareMsg.Cluster][node.GlobalViewID].Operation != "Empty" {
-						fmt.Printf("Start Empty consensus for ViewID %d in ShareGlobalMsgToLocal\n", reqMsg.GlobalShareMsg.ViewID)
-						var msg consensus.RequestMsg
-						msg.ClientID = node.NodeID
-						msg.Operation = "Empty"
-						msg.Timestamp = 0
-						node.MsgEntrance <- &msg
-					}*/
-			}
-			node.MsgDeliveryLock.Unlock()
-			node.ReqMsgBufLock.Unlock()
-		}
+	if reqMsg.GlobalShareMsg.Cluster == node.ClusterName {
+		//如果是本地的共识，取出存在buffer中的第一个消息，说明已经达成共识
+		node.PendingMsgsLock.Lock()
+		node.MsgBuffer.PendingMsgs = node.MsgBuffer.PendingMsgs[1:]
+		node.PendingMsgsLock.Unlock()
 	}
-
 	// GlobalConsensus 会将msg存入MsgLogs中
 	replyMsg, committedMsg, err := node.GlobalConsensus(reqMsg)
 	if err != nil {
@@ -944,24 +917,17 @@ func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
 		return err
 	}
 
-	if replyMsg != nil {
-		if committedMsg == nil {
-			return errors.New("committed message is nil, even though the reply message is not nil")
-		}
+	// Attach node ID to the message
+	replyMsg.NodeID = node.NodeID
+	// Save the last version of committed messages to node.
+	// node.CommittedMsgs = append(node.CommittedMsgs, committedMsg)
+	fmt.Printf("Global stage ID %s %d\n", reqMsg.GlobalShareMsg.Cluster, reqMsg.GlobalShareMsg.ViewID)
+	node.GlobalViewIDLock.Lock()
 
-		// Attach node ID to the message
-		replyMsg.NodeID = node.NodeID
-		// Save the last version of committed messages to node.
-		// node.CommittedMsgs = append(node.CommittedMsgs, committedMsg)
-		fmt.Printf("Global stage ID %s %d\n", reqMsg.GlobalShareMsg.Cluster, reqMsg.GlobalShareMsg.ViewID)
-		fmt.Printf("-----Overall consensus----\n")
-		node.GlobalViewIDLock.Lock()
-		if node.GlobalViewID == reqMsg.GlobalShareMsg.ViewID {
-			node.Reply(node.GlobalViewID)
-		}
-		node.GlobalViewIDLock.Unlock()
-		// LogStage("Reply\n", true)
-	}
+	node.Reply(node.GlobalViewID, reqMsg.GlobalShareMsg.RequestMsg)
+
+	node.GlobalViewIDLock.Unlock()
+	// LogStage("Reply\n", true)
 
 	return nil
 }
@@ -970,6 +936,11 @@ func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
 func (node *Node) ShareGlobalMsgToLocal(reqMsg *consensus.GlobalShareMsg) error {
 	// LogMsg(reqMsg)
 	// LogStage(fmt.Sprintf("Consensus Process (ViewID:%d)", node.CurrentState.ViewID), false)
+	// 如果是本集群发送的消息不需要接受，如果已经收到过这个消息了也不用接收
+	if reqMsg.Cluster == node.ClusterName || node.GlobalLog.MsgLogs[reqMsg.Cluster][reqMsg.ViewID] != nil {
+		return nil
+	}
+
 	digest, _ := hex.DecodeString(reqMsg.Digest)
 	if !node.RsaVerySignWithSha256(digest, reqMsg.Sign, node.getPubKey(reqMsg.Cluster, reqMsg.NodeID)) {
 		fmt.Println("节点签名验证失败！,拒绝执行Global commit")
@@ -993,36 +964,49 @@ func (node *Node) ShareGlobalMsgToLocal(reqMsg *consensus.GlobalShareMsg) error 
 		GlobalShareMsg: reqMsg,
 	}
 
-	// 将消息存入log中
-	node.GlobalLog.MsgLogs[reqMsg.Cluster][reqMsg.ViewID] = reqMsg.RequestMsg
-
+	// 发送给其他主节点和本地节点
+	node.ShareLocalConsensus(reqMsg, "/global")
 	node.Broadcast(node.ClusterName, sendMsg, "/GlobalToLocal")
-	fmt.Printf("----- GlobalToLocal -----\n")
 
-	//如果是主节点收到其他集群的全局共享消息，需要检查本地有正在进行的共识或收到客户端的消息，如果都没有需要发送一个空白消息进行本地共识
-	if node.NodeID == node.View.Primary {
-		// 检查本地有没有正在进行的共识？
-		if node.CurrentState == nil || node.CurrentState.CurrentStage == consensus.Committed {
-			// 检查有没有收到客户端的消息
-			node.ReqMsgBufLock.Lock()
-			node.MsgDeliveryLock.Lock()
-			if len(node.MsgBuffer.ReqMsgs) == 0 && len(node.MsgEntrance) == 0 && len(node.MsgDelivery) == 0 {
-				/*
-					_, ok := node.GlobalLog.MsgLogs[node.ClusterName][reqMsg.ViewID]
-					if !ok && reqMsg.RequestMsg.Operation != "Empty" && node.GlobalLog.MsgLogs[reqMsg.Cluster][node.GlobalViewID].Operation != "Empty" {
-						fmt.Printf("Start Empty consensus for ViewID %d in ShareGlobalMsgToLocal\n", reqMsg.ViewID)
-						var msg consensus.RequestMsg
-						msg.ClientID = node.NodeID
-						msg.Operation = "Empty"
-						msg.Timestamp = 0
-						node.MsgEntrance <- &msg
-					}*/
-			}
-			node.MsgDeliveryLock.Unlock()
-			node.ReqMsgBufLock.Unlock()
+	fmt.Printf("----- 收到其他委员会节点发来的全局共识，已发送给本地节点和其他委员会节点 -----\n")
+	node.Reply(node.GlobalViewID, reqMsg.RequestMsg)
+
+	if Allcluster[node.GlobalViewID%int64(len(Allcluster))] == node.ClusterName && len(node.MsgBuffer.PendingMsgs) > 0 { // 如果轮询到本地主节点作为代理人，发送消息给全局和本地
+		node.PendingMsgsLock.Lock()
+		committedMsg := node.MsgBuffer.PendingMsgs[0]
+		node.MsgBuffer.PendingMsgs = node.MsgBuffer.PendingMsgs[1:]
+		node.PendingMsgsLock.Unlock()
+
+		fmt.Printf("send consensus to Global\n")
+		// 获取消息摘要
+		msg, err := json.Marshal(committedMsg)
+		if err != nil {
+			return err
 		}
-	}
+		digest := consensus.Hash(msg)
 
+		// 节点对消息摘要进行签名
+		digestByte, _ := hex.DecodeString(digest)
+		signInfo := node.RsaSignWithSha256(digestByte, node.rsaPrivKey)
+		// committedMsg.Result = false
+		GlobalShareMsg := new(consensus.GlobalShareMsg)
+		GlobalShareMsg.RequestMsg = committedMsg
+		GlobalShareMsg.NodeID = node.NodeID
+		GlobalShareMsg.Sign = signInfo
+		GlobalShareMsg.Digest = digest
+		GlobalShareMsg.Cluster = node.ClusterName
+		GlobalShareMsg.ViewID = node.GlobalViewID
+		node.ShareLocalConsensus(GlobalShareMsg, "/global")
+		// 附加节点ID,用于数字签名验证
+		sendMsg := &consensus.LocalMsg{
+			Sign:           signInfo,
+			NodeID:         node.NodeID,
+			GlobalShareMsg: GlobalShareMsg,
+		}
+		node.Broadcast(node.ClusterName, sendMsg, "/GlobalToLocal")
+		// 达成本地共识，进行全局共识的排序和执行
+		node.Reply(node.GlobalViewID, committedMsg)
+	}
 	return nil
 }
 

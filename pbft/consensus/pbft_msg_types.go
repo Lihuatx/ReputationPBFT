@@ -43,6 +43,7 @@ type GlobalShareMsg struct {
 	ViewID     int64       `json:"viewID"`
 }
 
+// 在这里LocalMsg是上层主节点委员会中的消息
 type LocalMsg struct {
 	GlobalShareMsg *GlobalShareMsg `json:"globalShareMsg"`
 	NodeID         string          `json:"nodeID"`
