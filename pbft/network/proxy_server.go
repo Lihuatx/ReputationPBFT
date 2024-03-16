@@ -50,7 +50,7 @@ func (server *Server) getReq(writer http.ResponseWriter, request *http.Request) 
 		fmt.Println(err)
 		return
 	}
-
+	fmt.Printf("\nhttp get RequestMsg op : %s\n", msg.Operation)
 	server.node.MsgEntrance <- &msg
 }
 

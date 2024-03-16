@@ -15,8 +15,7 @@ type State struct {
 }
 
 type GlobalLog struct {
-	MsgLogs  map[string]map[int64]*RequestMsg     // cluster - ViewID - msg
-	VoteLogs map[string]map[int64]map[string]bool // cluster - ViewID - voteNodeID - vote
+	MsgLogs map[string]map[int64]*RequestMsg // cluster - ViewID - msg
 }
 
 type MsgLogs struct {
@@ -154,7 +153,7 @@ func (state *State) Commit(commitMsg *VoteMsg) (*ReplyMsg, *RequestMsg, error) {
 		result := "Executed"
 
 		// Change the stage to prepared.
-		state.CurrentStage = Committed
+		// state.CurrentStage = Committed
 
 		return &ReplyMsg{
 			ViewID:    state.ViewID,
