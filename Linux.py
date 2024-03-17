@@ -63,8 +63,12 @@ time.sleep(1)
 # 假设这是紧接着之前创建的窗口，其索引为 len(commands) + 1
 curl_window_index = len(commands) + 1
 
-# 在新窗口中执行 curl 命令
-for curl_command in curl_commands:
-    # 构建 Tmux 命令以在新窗口中执行 curl 命令
-    tmux_command = f"tmux send-keys -t myPBFT:{curl_window_index} '{curl_command}' C-m"
-    subprocess.run(['bash', '-c', tmux_command])
+# 将 curl 命令写入一个临时脚本文件
+with open("curl_commands.sh", "w") as script_file:
+    for curl_command in curl_commands:
+        script_file.write(curl_command + "\n")
+
+# 然后在 Tmux 中执行这个脚本
+tmux_command = f'tmux send-keys -t myPBFT:{curl_window_index} "bash curl_commands.sh" C-m'
+subprocess.run(['bash', '-c', tmux_command])
+
