@@ -65,7 +65,7 @@ curl_window_index = len(commands) + 1
 
 # 将 curl 命令写入一个临时脚本文件
 with open("curl_commands.sh", "w") as script_file:
-    for i in range(10):
+    for i in range(100):
         for base_command in curl_commands:
             # 使用字符串的 format 方法将 i 插入到 operation 字段的值中
             modified_command = base_command.replace("SendMsg1", "SendMsg1-{}".format(i)).replace("SendMsg2", "SendMsg2-{}".format(i))
