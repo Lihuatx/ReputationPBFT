@@ -31,6 +31,8 @@ const (
 	PrePrepared              // The ReqMsgs is processed successfully. The node is ready to head to the Prepare stage.
 	Prepared                 // Same with `prepared` stage explained in the original paper.
 	Committed                // Same with `committed-local` stage explained in the original paper.
+
+	GetRequest
 )
 
 // f: # of Byzantine faulty node

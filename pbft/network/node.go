@@ -153,6 +153,7 @@ func NewNode(nodeID string, clusterName string) *Node {
 
 	node.rsaPubKey = node.getPubKey(clusterName, nodeID)
 	node.rsaPrivKey = node.getPivKey(clusterName, nodeID)
+	node.CurrentState = consensus.CreateState(node.View.ID, -2)
 
 	lastViewId = 0
 	lastGlobalId = 0
@@ -226,7 +227,7 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg) (bool, int
 
 	node.CommittedMsgs = append(node.CommittedMsgs, ReplyMsg)
 	for _, value := range node.CommittedMsgs {
-		fmt.Printf("Committed value: %s, %d, %s, %d", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
+		fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
 	}
 	fmt.Print("\n\n")
 
@@ -469,8 +470,8 @@ func (node *Node) GetReply(msg *consensus.ReplyMsg) {
 func (node *Node) createStateForNewConsensus(goOn bool) error {
 	const viewID = 10000000000 // temporary.
 	// Check if there is an ongoing consensus process.
-	if node.CurrentState != nil {
-		if node.CurrentState.CurrentStage != consensus.Committed && !goOn {
+	if node.CurrentState.LastSequenceID != -2 {
+		if node.CurrentState.CurrentStage != consensus.Committed && !goOn && node.CurrentState.CurrentStage != consensus.GetRequest {
 			return errors.New("another consensus is ongoing")
 		}
 	}
@@ -552,11 +553,10 @@ func (node *Node) routeGlobalMsg(msg interface{}) []error {
 func (node *Node) routeMsg(msg interface{}) []error {
 	switch msg.(type) {
 	case *consensus.RequestMsg:
-		if node.CurrentState == nil || node.CurrentState.CurrentStage == consensus.Committed { //一开始没有进行共识的时候，此时 currentstate 为nil
+		if node.CurrentState.LastSequenceID == -2 || node.CurrentState.CurrentStage == consensus.Committed { //一开始没有进行共识的时候，此时 currentstate 为nil
 			// Copy buffered messages first.
 			msgs := make([]*consensus.RequestMsg, len(node.MsgBuffer.ReqMsgs))
 			copy(msgs, node.MsgBuffer.ReqMsgs)
-
 			// Append a newly arrived message.
 			msgs = append(msgs, msg.(*consensus.RequestMsg))
 
@@ -565,6 +565,8 @@ func (node *Node) routeMsg(msg interface{}) []error {
 			node.MsgBuffer.ReqMsgs = make([]*consensus.RequestMsg, 0)
 			node.ReqMsgBufLock.Unlock()
 			// Send messages.
+			// 注意这行代码，在系统初始化时必须先主动发一次请求达成共识，否则一开始node.CurrentState=nil
+			node.CurrentState.CurrentStage = consensus.GetRequest
 			node.MsgDelivery <- msgs
 		} else {
 			node.ReqMsgBufLock.Lock()
@@ -573,7 +575,7 @@ func (node *Node) routeMsg(msg interface{}) []error {
 		}
 		fmt.Printf("                    request buffer %d\n", len(node.MsgBuffer.ReqMsgs))
 	case *consensus.PrePrepareMsg:
-		if node.CurrentState == nil || node.CurrentState.CurrentStage == consensus.Committed {
+		if node.CurrentState.LastSequenceID == -2 || node.CurrentState.CurrentStage == consensus.Committed {
 			// Copy buffered messages first.
 			node.PrepreMsgBufLock.Lock()
 			msgs := make([]*consensus.PrePrepareMsg, len(node.MsgBuffer.PrePrepareMsgs))
@@ -598,7 +600,7 @@ func (node *Node) routeMsg(msg interface{}) []error {
 			// if node.CurrentState == nil || node.CurrentState.CurrentStage != consensus.PrePrepared
 			// 这样的写法会导致当当前节点已经收到2f个节点进入committed阶段时，就会把后来收到的Preprepare消息放到缓冲区中，
 			// 这样在下次共识又到prePrepare阶段时就会先去处理上一轮共识的prePrepare协议！
-			if node.CurrentState == nil || node.CurrentState.CurrentStage != consensus.PrePrepared {
+			if node.CurrentState.LastSequenceID == -2 || node.CurrentState.CurrentStage != consensus.PrePrepared {
 				node.MsgBuffer.PrepareMsgs = append(node.MsgBuffer.PrepareMsgs, msg.(*consensus.VoteMsg))
 			} else {
 				// Copy buffered messages first.
@@ -625,7 +627,7 @@ func (node *Node) routeMsg(msg interface{}) []error {
 
 			}
 		} else if msg.(*consensus.VoteMsg).MsgType == consensus.CommitMsg {
-			if node.CurrentState == nil || node.CurrentState.CurrentStage != consensus.Prepared {
+			if node.CurrentState.LastSequenceID == -2 || node.CurrentState.CurrentStage != consensus.Prepared {
 				node.MsgBuffer.CommitMsgs = append(node.MsgBuffer.CommitMsgs, msg.(*consensus.VoteMsg))
 			} else {
 				// Copy buffered messages first.
@@ -904,8 +906,14 @@ func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
 	if !node.RsaVerySignWithSha256(digest, reqMsg.Sign, node.getPubKey(node.ClusterName, reqMsg.NodeID)) {
 		fmt.Println("节点签名验证失败！,拒绝执行Global commit")
 	}
-	if reqMsg.GlobalShareMsg.Cluster == node.ClusterName {
+	if reqMsg.GlobalShareMsg.Cluster == node.ClusterName && node.NodeID != node.View.Primary {
 		//如果是本地的共识，取出存在buffer中的第一个消息，说明已经达成共识
+		for {
+			if len(node.MsgBuffer.PendingMsgs) > 0 {
+				break
+				fmt.Printf("node.MsgBuffer.PendingMsgs 为0\n")
+			}
+		}
 		node.PendingMsgsLock.Lock()
 		node.MsgBuffer.PendingMsgs = node.MsgBuffer.PendingMsgs[1:]
 		node.PendingMsgsLock.Unlock()
