@@ -37,12 +37,11 @@ for index, (exe, arg1, arg2) in enumerate(commands):
     # 为每个进程创建新窗口，窗口名为 "app-Nx"
     window_name = f"app-{arg1}"
     subprocess.run(['tmux', 'new-window', '-t', f'myPBFT:{index + 1}', '-n', window_name])
-    time.sleep(1)
+    time.sleep(0.1)
 
     # 构建在新窗口中执行的命令
     tmux_command = f"tmux send-keys -t myPBFT:{index + 1} '{exe} {arg1} {arg2}' C-m"
     subprocess.run(['bash', '-c', tmux_command])
-
 
 time.sleep(2)
 
@@ -50,7 +49,7 @@ time.sleep(2)
 curl_commands = [
     "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg1\",\"timestamp\":859381532}' http://localhost:1111/req",
     "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg2\",\"timestamp\":859381532}' http://localhost:1116/req",
-    "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg3\",\"timestamp\":859381532}' http://localhost:1121/req",
+#    "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg3\",\"timestamp\":859381532}' http://localhost:1121/req",
 ]
 
 # 在 Tmux 会话中添加一个新窗口，用于执行 curl 命令
