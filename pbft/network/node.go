@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"regexp"
 	"simple_pbft/pbft/consensus"
 	"sync"
 	"time"
@@ -78,7 +79,7 @@ var PrimaryNode = map[string]string{
 	"P": "P0",
 }
 
-var Allcluster = []string{"N", "M"}
+var Allcluster = []string{"N", "M", "P"}
 
 const ResolvingTimeDuration = time.Millisecond * 1000 // 1 second.
 
@@ -224,10 +225,18 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 
 func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg) (bool, int64) {
 	fmt.Printf("Global View ID : %d 达成全局共识\n", node.GlobalViewID)
+	re := regexp.MustCompile(`\d+`)
 
 	node.CommittedMsgs = append(node.CommittedMsgs, ReplyMsg)
 	for _, value := range node.CommittedMsgs {
-		fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
+		matches := re.FindString(value.Operation)
+		if matches == "1" && node.ClusterName == "N" {
+			fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
+		} else if matches == "2" && node.ClusterName == "M" {
+			fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
+		} else if matches == "3" && node.ClusterName == "P" {
+			fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
+		}
 	}
 	fmt.Print("\n\n")
 
@@ -380,7 +389,6 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 		// Append msg to its logs
 		node.PendingMsgsLock.Lock()
 		node.MsgBuffer.PendingMsgs = append(node.MsgBuffer.PendingMsgs, committedMsg)
-		node.PendingMsgsLock.Unlock()
 
 		if node.NodeID == node.View.Primary { // 本地共识结束后，主节点将本地达成共识的请求发送至其他集群的主节点
 			if Allcluster[node.GlobalViewID%int64(len(Allcluster))] == node.ClusterName { // 如果轮询到本地主节点作为代理人，发送消息给全局和本地
@@ -392,9 +400,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 				}
 				digest := consensus.Hash(msg)
 				//取出存在buffer中的消息，发送出去全局共识
-				node.PendingMsgsLock.Lock()
 				node.MsgBuffer.PendingMsgs = node.MsgBuffer.PendingMsgs[1:]
-				node.PendingMsgsLock.Unlock()
 				// 节点对消息摘要进行签名
 				digestByte, _ := hex.DecodeString(digest)
 				signInfo := node.RsaSignWithSha256(digestByte, node.rsaPrivKey)
@@ -441,14 +447,12 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 		} else { // 对于其他本地子节点，如果已经有 Preprepare 缓存消息
 			node.View.ID++
 			var TempReqMsg *consensus.PrePrepareMsg
-			node.PrepreMsgBufLock.Lock()
 			if len(node.MsgBuffer.PrePrepareMsgs) > 0 {
 				// 直接获取第一个请求消息
 				TempReqMsg = node.MsgBuffer.PrePrepareMsgs[0]
 				// 直接更新请求消息缓冲区，去掉已处理的第一个消息
 				node.MsgBuffer.PrePrepareMsgs = node.MsgBuffer.PrePrepareMsgs[1:]
 			}
-			node.PrepreMsgBufLock.Unlock()
 
 			// 如果有请求消息，则继续执行相关处理
 			if TempReqMsg != nil && TempReqMsg.ViewID >= node.View.ID {
@@ -458,6 +462,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 				node.CurrentState.CurrentStage = consensus.Committed
 			}
 		}
+		node.PendingMsgsLock.Unlock()
 
 	}
 	return nil
@@ -562,7 +567,12 @@ func (node *Node) routeMsg(msg interface{}) []error {
 
 			// Empty the buffer.
 			node.ReqMsgBufLock.Lock()
-			node.MsgBuffer.ReqMsgs = make([]*consensus.RequestMsg, 0)
+			if len(msgs) > 1 {
+				node.MsgBuffer.ReqMsgs = append(node.MsgBuffer.ReqMsgs, msg.(*consensus.RequestMsg))
+				msgs = msgs[0:1]
+			} else {
+				node.MsgBuffer.ReqMsgs = make([]*consensus.RequestMsg, 0)
+			}
 			node.ReqMsgBufLock.Unlock()
 			// Send messages.
 			// 注意这行代码，在系统初始化时必须先主动发一次请求达成共识，否则一开始node.CurrentState=nil
@@ -663,7 +673,7 @@ var lastGlobalId int64
 
 func (node *Node) routeMsgWhenAlarmed() []error {
 	if node.View.ID != lastViewId || node.GlobalViewID != lastGlobalId {
-		fmt.Printf("                                                                View ID %d,Global ID %d\n", node.View.ID, node.GlobalViewID)
+		fmt.Printf("                                                                View ID %d,Global ID %d,reqbuf %d\n", node.View.ID, node.GlobalViewID, len(node.MsgBuffer.ReqMsgs))
 		lastViewId = node.View.ID
 		lastGlobalId = node.GlobalViewID
 	}

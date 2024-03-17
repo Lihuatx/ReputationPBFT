@@ -11,10 +11,10 @@ commands = [
     ('app.exe', 'M1', 'M'),
     ('app.exe', 'M2', 'M'),
     ('app.exe', 'M3', 'M'),
-    #('app.exe', 'P0', 'P'),
-    #('app.exe', 'P1', 'P'),
-    #('app.exe', 'P2', 'P'),
-    #('app.exe', 'P3', 'P'),
+    ('app.exe', 'P0', 'P'),
+    ('app.exe', 'P1', 'P'),
+    ('app.exe', 'P2', 'P'),
+    ('app.exe', 'P3', 'P'),
 ]
 
 # 遍历命令和参数，然后在新的命令提示符窗口中执行
@@ -57,5 +57,5 @@ subprocess.Popen(['powershell', '-Command', ps_command])
 subprocess.Popen(['powershell', '-Command', ps_command2])
 
 
-#subprocess.Popen(['powershell', '-Command', ps_command3])
+subprocess.Popen(['powershell', '-Command', ps_command3])
 
