@@ -1,43 +1,61 @@
 import subprocess
-import sys
 import time
-import datetime
 
-# 定义要执行的curl命令
-curl_command = """
-curl -X POST -H "Content-Type: application/json" -d '{"clientID":"ahnhwi","operation":"SendMes1","timestamp":859381532}' http://localhost:1111/req
+# 定义要在新终端中执行的命令及其参数
+commands = [
+    ('app.exe', 'N0', 'N'),
+    ('app.exe', 'N1', 'N'),
+    ('app.exe', 'N2', 'N'),
+    ('app.exe', 'N3', 'N'),
+    ('app.exe', 'M0', 'M'),
+    ('app.exe', 'M1', 'M'),
+    ('app.exe', 'M2', 'M'),
+    ('app.exe', 'M3', 'M'),
+    #('app.exe', 'P0', 'P'),
+    #('app.exe', 'P1', 'P'),
+    #('app.exe', 'P2', 'P'),
+    #('app.exe', 'P3', 'P'),
+]
+
+# 遍历命令和参数，然后在新的命令提示符窗口中执行
+for exe, arg1, arg2 in commands:
+    # 如果 app.exe 路径中包含空格，确保使用引号括起来
+    command = f'start cmd /k "{exe}" {arg1} {arg2}'
+    subprocess.Popen(command, shell=True)
+
+time.sleep(2)
+
+# 定义第五个终端要执行的PowerShell命令
+ps_command = """
+$headers = @{ "Content-Type" = "application/json" }
+$body = '{"clientID":"ahnhwi","operation":"SendMes1","timestamp":859381532}'
+$response = Invoke-WebRequest -Uri "http://localhost:1111/req" -Method POST -Headers $headers -Body $body
 """
 
-curl_command2 = """
-curl -X POST -H "Content-Type: application/json" -d '{"clientID":"ahnhwi","operation":"SendMes2","timestamp":859381532}' http://localhost:1116/req
+# 定义第五个终端要执行的PowerShell命令
+ps_command2 = """
+$headers = @{ "Content-Type" = "application/json" }
+$body = '{"clientID":"ahnhwi","operation":"SendMes2","timestamp":859381532}'
+$response = Invoke-WebRequest -Uri "http://localhost:1116/req" -Method POST -Headers $headers -Body $body
 """
 
-curl_command3 = """
-curl -X POST -H "Content-Type: application/json" -d '{"clientID":"ahnhwi","operation":"SendMes3","timestamp":859381532}' http://localhost:1121/req
+
+
+# 定义第五个终端要执行的PowerShell命令
+ps_command3 = """
+$headers = @{ "Content-Type" = "application/json" }
+$body = '{"clientID":"ahnhwi","operation":"GetMyName","timestamp":859381532}'
+$response = Invoke-WebRequest -Uri "http://localhost:1121/req" -Method POST -Headers $headers -Body $body
 """
 
-num = int(sys.argv[1])
-if num < 4:
-    if num == 1:
-        subprocess.Popen(['bash', '-c', curl_command])
-    elif num == 2:
-        subprocess.Popen(['bash', '-c', curl_command2])
-    else:
-        subprocess.Popen(['bash', '-c', curl_command3])
-else:
-    print(datetime.datetime.now())
-    for i in range(10):
-        # 动态构建带有当前循环i值的curl命令
-        dynamic_curl_command = f"""
-        curl -X POST -H "Content-Type: application/json" -d '{{"clientID":"ahnhwi","operation":"SendMes1 - {i}","timestamp":{i}}}' http://localhost:1111/req
-        """
-        dynamic_curl_command2 = f"""
-        curl -X POST -H "Content-Type: application/json" -d '{{"clientID":"ahnhwi","operation":"SendMes2 - {i}","timestamp":{i}}}' http://localhost:1116/req
-        """
-        dynamic_curl_command3 = f"""
-        curl -X POST -H "Content-Type: application/json" -d '{{"clientID":"ahnhwi","operation":"SendMes3","timestamp":{i}}}' http://localhost:1121/req
-        """
-        subprocess.Popen(['bash', '-c', dynamic_curl_command])
-        subprocess.Popen(['bash', '-c', dynamic_curl_command2])
-        # subprocess.Popen(['bash', '-c', dynamic_curl_command3])
-        time.sleep(0.1)
+# 在新的PowerShell窗口中执行第五个命令
+subprocess.Popen(['powershell', '-Command', ps_command])
+
+# time.sleep(2)
+
+
+subprocess.Popen(['powershell', '-Command', ps_command2])
+
+
+#subprocess.Popen(['powershell', '-Command', ps_command3])
+
