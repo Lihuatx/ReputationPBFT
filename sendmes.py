@@ -32,7 +32,7 @@ if num < 4:
         subprocess.Popen(['powershell', '-Command', ps_command3])
 else:
     print(datetime.datetime.now())
-    for i in range(30):
+    for i in range(20):
         # 动态构建带有当前循环i值的PowerShell命令
         ps_command = f"""
         $headers = @{{ "Content-Type" = "application/json" }}
@@ -51,7 +51,7 @@ else:
         """
         subprocess.Popen(['powershell', '-Command', ps_command])
         subprocess.Popen(['powershell', '-Command', ps_command2])
-        # subprocess.Popen(['powershell', '-Command', ps_command3])
+        subprocess.Popen(['powershell', '-Command', ps_command3])
         # time.sleep(0.1)
 
 # 在新的PowerShell窗口中执行第五个命令

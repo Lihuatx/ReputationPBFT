@@ -24,10 +24,10 @@ commands = [
     ('./app', 'M1', 'M'),
     ('./app', 'M2', 'M'),
     ('./app', 'M3', 'M'),
-    # ('./app', 'P0', 'P'),
-    # ('./app', 'P1', 'P'),
-    # ('./app', 'P2', 'P'),
-    # ('./app', 'P3', 'P'),
+    ('./app', 'P0', 'P'),
+    ('./app', 'P1', 'P'),
+    ('./app', 'P2', 'P'),
+    ('./app', 'P3', 'P'),
 ]
 
 # 遍历命令和参数，然后在新的终端窗口中执行
@@ -49,7 +49,7 @@ time.sleep(2)
 curl_commands = [
     "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg1\",\"timestamp\":859381532}' http://localhost:1111/req",
     "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg2\",\"timestamp\":859381532}' http://localhost:1116/req",
-    #    "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg3\",\"timestamp\":859381532}' http://localhost:1121/req",
+    "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg3\",\"timestamp\":859381532}' http://localhost:1121/req",
 ]
 
 # 在 Tmux 会话中添加一个新窗口，用于执行 curl 命令
@@ -68,7 +68,7 @@ with open("curl_commands.sh", "w") as script_file:
     for i in range(100):
         for base_command in curl_commands:
             # 使用字符串的 format 方法将 i 插入到 operation 字段的值中
-            modified_command = base_command.replace("SendMsg1", "SendMsg1-{}".format(i)).replace("SendMsg2", "SendMsg2-{}".format(i))
+            modified_command = base_command.replace("SendMsg1", "SendMsg1-{}".format(i)).replace("SendMsg2", "SendMsg2-{}".format(i)).replace("SendMsg3", "SendMsg3-{}".format(i))
             script_file.write(modified_command + "\n")
 
 # 然后在 Tmux 中执行这个脚本

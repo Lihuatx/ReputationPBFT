@@ -11,10 +11,10 @@ commands = [
     ('app.exe', 'M1', 'M'),
     ('app.exe', 'M2', 'M'),
     ('app.exe', 'M3', 'M'),
-    #('app.exe', 'P0', 'P'),
-    #('app.exe', 'P1', 'P'),
-    #('app.exe', 'P2', 'P'),
-    #('app.exe', 'P3', 'P'),
+    ('app.exe', 'P0', 'P'),
+    ('app.exe', 'P1', 'P'),
+    ('app.exe', 'P2', 'P'),
+    ('app.exe', 'P3', 'P'),
 ]
 
 # 遍历命令和参数，然后在新的命令提示符窗口中执行
@@ -23,7 +23,7 @@ for exe, arg1, arg2 in commands:
     command = f'start cmd /k "{exe}" {arg1} {arg2}'
     subprocess.Popen(command, shell=True)
 
-time.sleep(6)
+time.sleep(2)
 
 # 定义第五个终端要执行的PowerShell命令
 ps_command = """
@@ -57,5 +57,5 @@ subprocess.Popen(['powershell', '-Command', ps_command])
 subprocess.Popen(['powershell', '-Command', ps_command2])
 
 
-#subprocess.Popen(['powershell', '-Command', ps_command3])
+subprocess.Popen(['powershell', '-Command', ps_command3])
 
