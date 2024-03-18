@@ -23,7 +23,7 @@ for exe, arg1, arg2 in commands:
     command = f'start cmd /k "{exe}" {arg1} {arg2}'
     subprocess.Popen(command, shell=True)
 
-time.sleep(2)
+time.sleep(6)
 
 # 定义第五个终端要执行的PowerShell命令
 ps_command = """

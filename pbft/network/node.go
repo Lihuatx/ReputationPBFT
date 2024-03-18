@@ -231,9 +231,12 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg) (bool, int
 	for _, value := range node.CommittedMsgs {
 		matches := re.FindString(value.Operation)
 		if matches == "1" && node.ClusterName == "N" {
-			fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
+			//fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
+			fmt.Printf("Committed value: %s, --end ", value.Operation)
+
 		} else if matches == "2" && node.ClusterName == "M" {
-			fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
+			//fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
+			fmt.Printf("Committed value: %s, --end ", value.Operation)
 		} else if matches == "3" && node.ClusterName == "P" {
 			fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
 		}
@@ -392,12 +395,28 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 			if Allcluster[node.GlobalViewID%int64(len(Allcluster))] == node.ClusterName { // 如果轮询到本地主节点作为代理人，发送消息给全局和本地
 				fmt.Printf("send consensus to Global\n")
 				// 获取消息摘要
+				const viewID = 10000000000
+				if len(node.MsgBuffer.PendingMsgs) >= int(node.View.ID-viewID) && node.View.ID-viewID-1 >= 0 && node.MsgBuffer.PendingMsgs[node.View.ID-viewID-1].Send == false {
+					index := len(node.MsgBuffer.PendingMsgs) - 1
+					for {
+						if index == -1 {
+							break
+						} else if node.MsgBuffer.PendingMsgs[index].Send == true {
+							break
+						}
+						index--
+					}
+					node.MsgBuffer.PendingMsgs[index+1].Send = true
+					committedMsg = node.MsgBuffer.PendingMsgs[index+1]
+				} else {
+					node.MsgBuffer.PendingMsgs[len(node.MsgBuffer.PendingMsgs)-1].Send = true
+				}
 				msg, err := json.Marshal(committedMsg)
 				if err != nil {
 					return err
 				}
 				digest := consensus.Hash(msg)
-				node.MsgBuffer.PendingMsgs[len(node.MsgBuffer.PendingMsgs)-1].Send = true
+
 				//取出存在buffer中的消息，发送出去全局共识
 				//node.MsgBuffer.PendingMsgs = node.MsgBuffer.PendingMsgs[1:]
 				// 节点对消息摘要进行签名
@@ -683,7 +702,15 @@ func (node *Node) routeMsgWhenAlarmed() []error {
 		fmt.Printf("                                                                View ID %d,Global ID %d,reqbuf %d\n", node.View.ID, node.GlobalViewID, len(node.MsgBuffer.ReqMsgs))
 		lastViewId = node.View.ID
 		lastGlobalId = node.GlobalViewID
+		if len(node.MsgBuffer.PendingMsgs) > 26 {
+			fmt.Printf("         Pending Msgs: ")
+			for _, value := range node.MsgBuffer.PendingMsgs {
+				fmt.Printf(" %s ", value.Operation)
+			}
+			fmt.Printf("\n\n")
+		}
 	}
+
 	if node.CurrentState == nil || node.CurrentState.CurrentStage == consensus.Committed {
 		// Check ReqMsgs, send them.
 		if len(node.MsgBuffer.ReqMsgs) != 0 {
@@ -969,6 +996,7 @@ func (node *Node) ShareGlobalMsgToLocal(reqMsg *consensus.GlobalShareMsg) error 
 	if Allcluster[node.GlobalViewID%int64(len(Allcluster))] != reqMsg.Cluster {
 		fmt.Printf("收到 %s %d 主节点的共识消息，但此时的代理节点为 %s ，需要等待······\n", reqMsg.Cluster, reqMsg.ViewID, Allcluster[node.GlobalViewID%int64(len(Allcluster))])
 		node.GlobalBuffer.ReqMsg = append(node.GlobalBuffer.ReqMsg, reqMsg)
+		// 在后面增加执行代码
 		return nil
 	}
 
@@ -1001,8 +1029,17 @@ func (node *Node) ShareGlobalMsgToLocal(reqMsg *consensus.GlobalShareMsg) error 
 	const viewID = 10000000000                                                                                                                                                                                                                    // temporary.
 	if Allcluster[node.GlobalViewID%int64(len(Allcluster))] == node.ClusterName && len(node.MsgBuffer.PendingMsgs) >= int(node.View.ID-viewID) && node.View.ID-viewID-1 >= 0 && node.MsgBuffer.PendingMsgs[node.View.ID-viewID-1].Send == false { // 如果轮询到本地主节点作为代理人，发送消息给全局和本地
 		//node.PendingMsgsLock.Lock()
-		node.MsgBuffer.PendingMsgs[node.View.ID-viewID-1].Send = true
-		committedMsg := node.MsgBuffer.PendingMsgs[node.View.ID-viewID-1]
+		index := len(node.MsgBuffer.PendingMsgs) - 1
+		for {
+			if index == -1 {
+				break
+			} else if node.MsgBuffer.PendingMsgs[index].Send == true {
+				break
+			}
+			index--
+		}
+		node.MsgBuffer.PendingMsgs[index+1].Send = true
+		committedMsg := node.MsgBuffer.PendingMsgs[index+1]
 		//node.MsgBuffer.PendingMsgs = node.MsgBuffer.PendingMsgs[1:]
 		//node.PendingMsgsLock.Unlock()
 
