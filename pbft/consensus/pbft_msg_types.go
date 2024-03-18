@@ -6,6 +6,7 @@ type RequestMsg struct {
 	Operation  string `json:"operation"`
 	SequenceID int64  `json:"sequenceID"`
 	URL        string `json:"url"` // 新增URL字段
+	Send       bool   `json:"Send"`
 }
 
 type ReplyMsg struct {
