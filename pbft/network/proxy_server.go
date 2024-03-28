@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"simple_pbft/pbft/consensus"
-	"time"
 )
 
 type Server struct {
@@ -57,7 +56,7 @@ func (server *Server) getReq(writer http.ResponseWriter, request *http.Request) 
 	msg.URL = request.URL.String()
 	msg.Send = false
 	if !flag {
-		start = time.Now()
+		//start = time.Now()
 		flag = true
 	}
 
