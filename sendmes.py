@@ -22,7 +22,7 @@ $body = '{"clientID":"ahnhwi","operation":"SendMes3","timestamp":859381532}'
 $response = Invoke-WebRequest -Uri "http://114.55.130.178:1124/req" -Method POST -Headers $headers -Body $body
 """
 
-for i in range(67):
+for i in range(80):
     # 动态构建带有当前循环i值的PowerShell命令
     ps_command = f"""
         $headers = @{{ "Content-Type" = "application/json" }}
