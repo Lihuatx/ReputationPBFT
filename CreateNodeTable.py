@@ -1,5 +1,5 @@
 clusters = ['N', 'M', 'P']  # 集群的标识符
-nodes_per_cluster = 7  # 每个集群的节点数
+nodes_per_cluster = 10  # 每个集群的节点数
 base_port = 1110  # 基础端口号
 
 # 初始化 NodeTable
