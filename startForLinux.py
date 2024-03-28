@@ -40,20 +40,19 @@ for index, (exe, arg1, arg2) in enumerate(commands):
     # 为每个进程创建新窗口，窗口名为 "app-Nx"
     window_name = f"app-{arg1}"
     subprocess.run(['tmux', 'new-window', '-t', f'myPBFT:{index + 1}', '-n', window_name])
-    time.sleep(1)
+    time.sleep(0.1)
 
     # 构建在新窗口中执行的命令
     tmux_command = f"tmux send-keys -t myPBFT:{index + 1} '{exe} {arg1} {arg2}' C-m"
     subprocess.run(['bash', '-c', tmux_command])
 
-
-time.sleep(4)
+time.sleep(2)
 
 # 定义要执行的curl命令来代替PowerShell命令
 curl_commands = [
-    "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg1\",\"timestamp\":859381532}' http://localhost:1111/req",
-    "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg2\",\"timestamp\":859381532}' http://localhost:1116/req",
-    "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg3\",\"timestamp\":859381532}' http://localhost:1121/req",
+    "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg1\",\"timestamp\":859381532}' http://localhost:1110/req",
+    "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg2\",\"timestamp\":859381532}' http://localhost:1117/req",
+    "curl -H 'Content-Type: application/json' -X POST -d '{\"clientID\":\"ahnhwi\",\"operation\":\"SendMsg3\",\"timestamp\":859381532}' http://localhost:1124/req",
 ]
 
 # 在 Tmux 会话中添加一个新窗口，用于执行 curl 命令
@@ -67,8 +66,15 @@ time.sleep(1)
 # 假设这是紧接着之前创建的窗口，其索引为 len(commands) + 1
 curl_window_index = len(commands) + 1
 
-# 在新窗口中执行 curl 命令
-for curl_command in curl_commands:
-    # 构建 Tmux 命令以在新窗口中执行 curl 命令
-    tmux_command = f"tmux send-keys -t myPBFT:{curl_window_index} '{curl_command}' C-m"
-    subprocess.run(['bash', '-c', tmux_command])
+# 将 curl 命令写入一个临时脚本文件
+with open("curl_commands.sh", "w") as script_file:
+    for i in range(1):
+        for base_command in curl_commands:
+            # 使用字符串的 format 方法将 i 插入到 operation 字段的值中
+            modified_command = base_command.replace("SendMsg1", "SendMsg1-{}".format(i)).replace("SendMsg2", "SendMsg2-{}".format(i)).replace("SendMsg3", "SendMsg3-{}".format(i))
+            script_file.write(modified_command + "\n")
+
+# 然后在 Tmux 中执行这个脚本
+tmux_command = f'tmux send-keys -t myPBFT:{curl_window_index} "bash curl_commands.sh" C-m'
+subprocess.run(['bash', '-c', tmux_command])
+
