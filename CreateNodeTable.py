@@ -3,7 +3,7 @@ nodes_per_cluster = 7  # 每个集群的节点数
 base_port = 1110  # 基础端口号
 
 # 初始化 NodeTable
-node_table = {cluster: {f"{cluster}{i}": f"localhost:{base_port + i + (clusters.index(cluster) * nodes_per_cluster)}"
+node_table = {cluster: {f"{cluster}{i}": f"0.0.0.0:{base_port + i + (clusters.index(cluster) * nodes_per_cluster)}"
                         for i in range(nodes_per_cluster)}
               for cluster in clusters}
 
