@@ -20,14 +20,17 @@ commands = [
     ('./app', 'N1', 'N'),
     ('./app', 'N2', 'N'),
     ('./app', 'N3', 'N'),
+    ('./app', 'N4', 'N'),
+    ('./app', 'N5', 'N'),
+    ('./app', 'N6', 'N'),
     ('./app', 'M0', 'M'),
     ('./app', 'M1', 'M'),
     ('./app', 'M2', 'M'),
     ('./app', 'M3', 'M'),
-    # ('./app', 'P0', 'P'),
-    # ('./app', 'P1', 'P'),
-    # ('./app', 'P2', 'P'),
-    # ('./app', 'P3', 'P'),
+    ('./app', 'P0', 'P'),
+    ('./app', 'P1', 'P'),
+    ('./app', 'P2', 'P'),
+    ('./app', 'P3', 'P'),
 ]
 
 # 遍历命令和参数，然后在新的终端窗口中执行
@@ -44,7 +47,7 @@ for index, (exe, arg1, arg2) in enumerate(commands):
     subprocess.run(['bash', '-c', tmux_command])
 
 
-time.sleep(2)
+time.sleep(4)
 
 # 定义要执行的curl命令来代替PowerShell命令
 curl_commands = [
