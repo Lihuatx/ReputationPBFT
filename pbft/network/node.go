@@ -341,11 +341,13 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 	//	}*/
 	//}
 	fmt.Print("\n\n")
-	for _, cluster := range Allcluster {
+	/*for _, cluster := range Allcluster {
 		for key, value := range node.ReScore[cluster] {
 			fmt.Printf("node %s score %d \n", key, value)
 		}
 	}
+
+	*/
 
 	node.GlobalViewID++
 
