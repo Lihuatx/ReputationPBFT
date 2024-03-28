@@ -288,7 +288,7 @@ func (node *Node) Broadcast(cluster string, msg interface{}, path string) map[st
 			errorMap[nodeID] = err
 			continue
 		}
-		fmt.Printf("Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
+		// fmt.Printf("Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
 		send(url+path, jsonMsg)
 	}
 
@@ -313,7 +313,7 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 			errorMap[cluster][PrimaryNode[cluster]] = err
 			continue
 		}
-		fmt.Printf("GloablMsg Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
+		// fmt.Printf("GloablMsg Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
 		send(url+path, jsonMsg)
 
 	}
@@ -321,6 +321,7 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 }
 
 var start time.Time
+var duration time.Duration
 
 func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int64) (bool, int64) {
 	fmt.Printf("Global View ID : %d == %d 达成全局共识\n", node.GlobalViewID, GloID)
@@ -355,11 +356,11 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 	if node.GlobalViewID == viewID+99 {
 		start = time.Now()
 	} else if node.GlobalViewID == 10000000201 && node.NodeID == "N0" {
-		duration := time.Since(start)
+		duration = time.Since(start)
 		// 打开文件，如果文件不存在则创建，如果文件存在则追加内容
 		fmt.Printf("  Function took %s\n", duration)
-		fmt.Printf("  Function took %s\n", duration)
-		fmt.Printf("  Function took %s\n", duration)
+		//fmt.Printf("  Function took %s\n", duration)
+		//fmt.Printf("  Function took %s\n", duration)
 
 		file, err := os.OpenFile("example.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -373,6 +374,10 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 			log.Fatal(err)
 		}
 
+	} else if node.GlobalViewID > 10000000201 && node.NodeID == "N0" {
+		fmt.Printf("  Function took %s\n", duration)
+		//fmt.Printf("  Function took %s\n", duration)
+		//fmt.Printf("  Function took %s\n", duration)
 	}
 
 	jsonMsg, err := json.Marshal(ReplyMsg)
@@ -730,7 +735,7 @@ func (node *Node) resolveClientRequest() {
 func (node *Node) routeGlobalMsg(msg interface{}) []error {
 	switch m := msg.(type) {
 	case *consensus.GlobalShareMsg:
-		fmt.Printf("---- Receive the Global Consensus from %s for Global ID:%d\n", m.NodeID, m.ViewID)
+		//fmt.Printf("---- Receive the Global Consensus from %s for Global ID:%d\n", m.NodeID, m.ViewID)
 		if m.Cluster != node.ClusterName {
 			// Copy buffered messages first.
 			node.GlobalBufferReqMsgs.Lock()
@@ -747,7 +752,7 @@ func (node *Node) routeGlobalMsg(msg interface{}) []error {
 			node.MsgGlobalDelivery <- msgs
 		}
 	case *consensus.LocalMsg:
-		fmt.Printf("---- Receive the Local Consensus from %s for cluster %s Global ID:%d\n", m.NodeID, m.GlobalShareMsg.Cluster, m.GlobalShareMsg.ViewID)
+		//fmt.Printf("---- Receive the Local Consensus from %s for cluster %s Global ID:%d\n", m.NodeID, m.GlobalShareMsg.Cluster, m.GlobalShareMsg.ViewID)
 		// Copy buffered messages first.
 		msgs := make([]*consensus.LocalMsg, len(node.GlobalBuffer.consensusMsg))
 		copy(msgs, node.GlobalBuffer.consensusMsg)
@@ -1030,7 +1035,7 @@ func (node *Node) resolveGlobalShareMsg(msgs []*consensus.GlobalShareMsg) []erro
 	errs := make([]error, 0)
 
 	// Resolve messages
-	fmt.Printf("len GlobalShareMsg msg %d\n", len(msgs))
+	//fmt.Printf("len GlobalShareMsg msg %d\n", len(msgs))
 
 	for _, reqMsg := range msgs {
 		// 收到其他组的消息，转发给其他主节点节点
@@ -1051,7 +1056,7 @@ func (node *Node) resolveLocalMsg(msgs []*consensus.LocalMsg) []error {
 	errs := make([]error, 0)
 
 	// Resolve messages
-	fmt.Printf("len LocalGlobalShareMsg msg %d\n", len(msgs))
+	//fmt.Printf("len LocalGlobalShareMsg msg %d\n", len(msgs))
 
 	for _, reqMsg := range msgs {
 
@@ -1072,7 +1077,7 @@ func (node *Node) resolveLocalMsg(msgs []*consensus.LocalMsg) []error {
 
 func (node *Node) GlobalConsensus(msg *consensus.LocalMsg) (*consensus.ReplyMsg, *consensus.RequestMsg, error) {
 	// Print current voting status
-	fmt.Printf("-----Global-Commit-Execute For %s----\n", msg.GlobalShareMsg.Cluster)
+	//fmt.Printf("-----Global-Commit-Execute For %s----\n", msg.GlobalShareMsg.Cluster)
 
 	// This node executes the requested operation locally and gets the result.
 	result := "Executed"
