@@ -2,6 +2,14 @@ import subprocess
 import time
 import sys
 
+# 定义命令模板和数量
+command_template = './app'
+groups = ['N', 'M', 'P']
+nodes_per_group = 19
+
+# 生成命令列表
+commands = [(command_template, f'{group}{i}', group) for group in groups for i in range(nodes_per_group)]
+
 def run_commands(arg):
     print("Starting commands...")
 
@@ -15,38 +23,6 @@ def run_commands(arg):
 
     subprocess.run(['tmux', 'new-session', '-d', '-s', 'myPBFT'])
 
-    commands = [
-        ('./app', 'N0', 'N'),
-        ('./app', 'N1', 'N'),
-        ('./app', 'N2', 'N'),
-        ('./app', 'N3', 'N'),
-        ('./app', 'N4', 'N'),
-        ('./app', 'N5', 'N'),
-        ('./app', 'N6', 'N'),
-        ('./app', 'N7', 'N'),
-        ('./app', 'N8', 'N'),
-        ('./app', 'N9', 'N'),
-        ('./app', 'M0', 'M'),
-        ('./app', 'M1', 'M'),
-        ('./app', 'M2', 'M'),
-        ('./app', 'M3', 'M'),
-        ('./app', 'M4', 'M'),
-        ('./app', 'M5', 'M'),
-        ('./app', 'M6', 'M'),
-        ('./app', 'M7', 'M'),
-        ('./app', 'M8', 'M'),
-        ('./app', 'M9', 'M'),
-        ('./app', 'P0', 'P'),
-        ('./app', 'P1', 'P'),
-        ('./app', 'P2', 'P'),
-        ('./app', 'P3', 'P'),
-        ('./app', 'P4', 'P'),
-        ('./app', 'P5', 'P'),
-        ('./app', 'P6', 'P'),
-        ('./app', 'P7', 'P'),
-        ('./app', 'P8', 'P'),
-        ('./app', 'P9', 'P'),
-    ]
 
     # 根据提供的 arg 值过滤命令
     filtered_commands = [(exe, arg1, arg2) for exe, arg1, arg2 in commands if arg2 == arg]
@@ -75,38 +51,6 @@ def run_commands_MP():
 
     subprocess.run(['tmux', 'new-session', '-d', '-s', 'myPBFT'])
 
-    commands = [
-        ('./app', 'N0', 'N'),
-        ('./app', 'N1', 'N'),
-        ('./app', 'N2', 'N'),
-        ('./app', 'N3', 'N'),
-        ('./app', 'N4', 'N'),
-        ('./app', 'N5', 'N'),
-        ('./app', 'N6', 'N'),
-        ('./app', 'N7', 'N'),
-        ('./app', 'N8', 'N'),
-        ('./app', 'N9', 'N'),
-        ('./app', 'M0', 'M'),
-        ('./app', 'M1', 'M'),
-        ('./app', 'M2', 'M'),
-        ('./app', 'M3', 'M'),
-        ('./app', 'M4', 'M'),
-        ('./app', 'M5', 'M'),
-        ('./app', 'M6', 'M'),
-        ('./app', 'M7', 'M'),
-        ('./app', 'M8', 'M'),
-        ('./app', 'M9', 'M'),
-        ('./app', 'P0', 'P'),
-        ('./app', 'P1', 'P'),
-        ('./app', 'P2', 'P'),
-        ('./app', 'P3', 'P'),
-        ('./app', 'P4', 'P'),
-        ('./app', 'P5', 'P'),
-        ('./app', 'P6', 'P'),
-        ('./app', 'P7', 'P'),
-        ('./app', 'P8', 'P'),
-        ('./app', 'P9', 'P'),
-    ]
 
     # 根据提供的 arg 值过滤命令
     filtered_commands = [(exe, arg1, arg2) for exe, arg1, arg2 in commands if arg2 != "N"]

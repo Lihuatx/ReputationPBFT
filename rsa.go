@@ -19,7 +19,7 @@ func genRsaKeys(ClusterName string) {
 		if err != nil {
 			log.Panic()
 		}
-		for i := 0; i <= 12; i++ {
+		for i := 0; i <= 34; i++ {
 			if !isExist("./Keys/" + ClusterName + "/" + ClusterName + strconv.Itoa(i)) {
 				err := os.Mkdir("./Keys/"+ClusterName+"/"+ClusterName+strconv.Itoa(i), 0644)
 				if err != nil {
