@@ -132,6 +132,7 @@ func (state *State) Prepare(prepareMsg *VoteMsg) (*VoteMsg, error) {
 			SequenceID: prepareMsg.SequenceID,
 			Digest:     prepareMsg.Digest,
 			MsgType:    CommitMsg,
+			Score:      make(map[string]bool),
 		}, nil
 	}
 

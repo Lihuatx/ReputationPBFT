@@ -32,16 +32,18 @@ type VoteMsg struct {
 	Digest     string `json:"digest"`
 	NodeID     string `json:"nodeID"`
 	MsgType    `json:"msgType"`
-	Sign       []byte `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+	Sign       []byte          `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+	Score      map[string]bool `json:"score"`
 }
 
 type GlobalShareMsg struct {
-	Cluster    string      `json:"ClusterName"`
-	NodeID     string      `json:"nodeID"`
-	RequestMsg *RequestMsg `json:"requestMsg"`
-	Digest     string      `json:"digest"`
-	Sign       []byte      `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
-	ViewID     int64       `json:"viewID"`
+	Cluster    string           `json:"ClusterName"`
+	NodeID     string           `json:"nodeID"`
+	RequestMsg *RequestMsg      `json:"requestMsg"`
+	Digest     string           `json:"digest"`
+	Sign       []byte           `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+	ViewID     int64            `json:"viewID"`
+	Score      map[string]uint8 `json:"score"`
 }
 
 // 在这里LocalMsg是上层主节点委员会中的消息

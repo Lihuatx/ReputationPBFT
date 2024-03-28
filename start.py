@@ -7,6 +7,9 @@ commands = [
     ('app.exe', 'N1', 'N'),
     ('app.exe', 'N2', 'N'),
     ('app.exe', 'N3', 'N'),
+    ('app.exe', 'N4', 'N'),
+    ('app.exe', 'N5', 'N'),
+    ('app.exe', 'N6', 'N'),
     ('app.exe', 'M0', 'M'),
     ('app.exe', 'M1', 'M'),
     ('app.exe', 'M2', 'M'),
@@ -23,39 +26,27 @@ for exe, arg1, arg2 in commands:
     command = f'start cmd /k "{exe}" {arg1} {arg2}'
     subprocess.Popen(command, shell=True)
 
-time.sleep(2)
-
-# 定义第五个终端要执行的PowerShell命令
-ps_command = """
-$headers = @{ "Content-Type" = "application/json" }
-$body = '{"clientID":"ahnhwi","operation":"SendMes1","timestamp":859381532}'
-$response = Invoke-WebRequest -Uri "http://localhost:1111/req" -Method POST -Headers $headers -Body $body
-"""
-
-# 定义第五个终端要执行的PowerShell命令
-ps_command2 = """
-$headers = @{ "Content-Type" = "application/json" }
-$body = '{"clientID":"ahnhwi","operation":"SendMes2","timestamp":859381532}'
-$response = Invoke-WebRequest -Uri "http://localhost:1116/req" -Method POST -Headers $headers -Body $body
-"""
+time.sleep(6)
 
 
-
-# 定义第五个终端要执行的PowerShell命令
-ps_command3 = """
-$headers = @{ "Content-Type" = "application/json" }
-$body = '{"clientID":"ahnhwi","operation":"GetMyName","timestamp":859381532}'
-$response = Invoke-WebRequest -Uri "http://localhost:1121/req" -Method POST -Headers $headers -Body $body
-"""
-
-# 在新的PowerShell窗口中执行第五个命令
-subprocess.Popen(['powershell', '-Command', ps_command])
-
-# time.sleep(2)
-
-
-subprocess.Popen(['powershell', '-Command', ps_command2])
-
-
-subprocess.Popen(['powershell', '-Command', ps_command3])
-
+for i in range(3):
+    # 动态构建带有当前循环i值的PowerShell命令
+    ps_command = f"""
+        $headers = @{{ "Content-Type" = "application/json" }}
+        $body = '{{"clientID":"ahnhwi","operation":"SendMes1 - {i}","timestamp":{i}}}'
+        $response = Invoke-WebRequest -Uri "http://localhost:1111/req" -Method POST -Headers $headers -Body $body
+        """
+    ps_command2 = f"""
+        $headers = @{{ "Content-Type" = "application/json" }}
+        $body = '{{"clientID":"ahnhwi","operation":"SendMes2 - {i}","timestamp":{i}}}'
+        $response = Invoke-WebRequest -Uri "http://localhost:1117/req" -Method POST -Headers $headers -Body $body
+        """
+    ps_command3 = f"""
+        $headers = @{{ "Content-Type" = "application/json" }}
+        $body = '{{"clientID":"ahnhwi","operation":"SendMes3 - {i}","timestamp":{i}}}'
+        $response = Invoke-WebRequest -Uri "http://localhost:1124/req" -Method POST -Headers $headers -Body $body
+        """
+    subprocess.Popen(['powershell', '-Command', ps_command])
+    subprocess.Popen(['powershell', '-Command', ps_command2])
+    subprocess.Popen(['powershell', '-Command', ps_command3])
+    time.sleep(0.015)
