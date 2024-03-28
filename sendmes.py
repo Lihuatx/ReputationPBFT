@@ -32,12 +32,12 @@ for i in range(80):
     ps_command2 = f"""
         $headers = @{{ "Content-Type" = "application/json" }}
         $body = '{{"clientID":"ahnhwi","operation":"SendMes2 - {i}","timestamp":{i}}}'
-        $response = Invoke-WebRequest -Uri "114.55.130.178:1117/req" -Method POST -Headers $headers -Body $body
+        $response = Invoke-WebRequest -Uri "114.55.130.178:1120/req" -Method POST -Headers $headers -Body $body
         """
     ps_command3 = f"""
         $headers = @{{ "Content-Type" = "application/json" }}
         $body = '{{"clientID":"ahnhwi","operation":"SendMes3 - {i}","timestamp":{i}}}'
-        $response = Invoke-WebRequest -Uri "114.55.130.178:1124/req" -Method POST -Headers $headers -Body $body
+        $response = Invoke-WebRequest -Uri "114.55.130.178:1130/req" -Method POST -Headers $headers -Body $body
         """
     subprocess.Popen(['powershell', '-Command', ps_command])
     subprocess.Popen(['powershell', '-Command', ps_command2])
