@@ -42,7 +42,7 @@ for i in range(80):
     subprocess.Popen(['powershell', '-Command', ps_command])
     subprocess.Popen(['powershell', '-Command', ps_command2])
     subprocess.Popen(['powershell', '-Command', ps_command3])
-    time.sleep(0.1)
+    time.sleep(0.05)
 
 # 在新的PowerShell窗口中执行第五个命令
 # subprocess.Popen(['powershell', '-Command', ps_command])

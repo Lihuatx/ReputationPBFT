@@ -394,7 +394,7 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 // GetReq can be called when the node's CurrentState is nil.
 // Consensus start procedure for the Primary.
 func (node *Node) GetReq(reqMsg *consensus.RequestMsg, goOn bool) error {
-	LogMsg(reqMsg)
+	//LogMsg(reqMsg)
 
 	// Create a new state for the new consensus.
 	err := node.createStateForNewConsensus(goOn)
@@ -413,7 +413,7 @@ func (node *Node) GetReq(reqMsg *consensus.RequestMsg, goOn bool) error {
 	signInfo := node.RsaSignWithSha256(digestByte, node.rsaPrivKey)
 	prePrepareMsg.Sign = signInfo
 
-	LogStage(fmt.Sprintf("Consensus Process (ViewID:%d)", node.CurrentState.ViewID), false)
+	//LogStage(fmt.Sprintf("Consensus Process (ViewID:%d)", node.CurrentState.ViewID), false)
 
 	// Send getPrePrepare message
 	if prePrepareMsg != nil {
@@ -421,7 +421,7 @@ func (node *Node) GetReq(reqMsg *consensus.RequestMsg, goOn bool) error {
 		prePrepareMsg.NodeID = node.NodeID
 
 		node.Broadcast(node.ClusterName, prePrepareMsg, "/preprepare")
-		LogStage("Pre-prepare", true)
+		//LogStage("Pre-prepare", true)
 	}
 
 	return nil
@@ -434,7 +434,7 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg, goOn boo
 		return nil
 	}
 
-	LogMsg(prePrepareMsg)
+	//LogMsg(prePrepareMsg)
 
 	// Create a new state for the new consensus.
 	err := node.createStateForNewConsensus(goOn)
@@ -457,11 +457,11 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg, goOn boo
 		signInfo := node.RsaSignWithSha256(digest, node.rsaPrivKey)
 		prePareMsg.Sign = signInfo
 
-		LogStage("Pre-prepare", true)
+		//LogStage("Pre-prepare", true)
 		if node.NodeType == CommitteeNode {
 			node.Broadcast(node.ClusterName, prePareMsg, "/prepare")
 		}
-		LogStage("Prepare", false)
+		//LogStage("Prepare", false)
 	}
 
 	return nil
@@ -472,7 +472,7 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 		return nil
 	}
 
-	LogMsg(prepareMsg)
+	//LogMsg(prepareMsg)
 
 	digest, _ := hex.DecodeString(prepareMsg.Digest)
 	if !node.RsaVerySignWithSha256(digest, prepareMsg.Sign, node.getPubKey(node.ClusterName, prepareMsg.NodeID)) {
@@ -496,12 +496,12 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 			commitMsg.Score[value.NodeID] = true
 		}
 
-		LogStage("Prepare", true)
+		//LogStage("Prepare", true)
 		if node.NodeType == CommitteeNode {
 			node.Broadcast(node.ClusterName, commitMsg, "/commit")
 
 		}
-		LogStage("Commit", false)
+		//LogStage("Commit", false)
 	}
 
 	return nil
@@ -513,7 +513,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 		return nil
 	}
 
-	LogMsg(commitMsg)
+	//LogMsg(commitMsg)
 
 	digest, _ := hex.DecodeString(commitMsg.Digest)
 	if !node.RsaVerySignWithSha256(digest, commitMsg.Sign, node.getPubKey(node.ClusterName, commitMsg.NodeID)) {
@@ -564,7 +564,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 			}
 		}
 
-		LogStage("Commit", true)
+		//LogStage("Commit", true)
 		fmt.Printf("ViewID :%d %s 达成本地共识，存入待执行缓存池\n", node.View.ID, committedMsg.Operation)
 
 		// Append msg to its logs
@@ -680,7 +680,7 @@ func (node *Node) createStateForNewConsensus(goOn bool) error {
 	// Create a new state for this new consensus process in the Primary
 	node.CurrentState = consensus.CreateState(node.View.ID, lastSequenceID)
 
-	LogStage("Create the replica status", true)
+	//LogStage("Create the replica status", true)
 	return nil
 }
 
