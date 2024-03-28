@@ -353,9 +353,9 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 	node.GlobalViewID++
 
 	const viewID = 10000000000 // temporary.
-	if node.GlobalViewID == viewID+33 {
+	if node.GlobalViewID == viewID+99 {
 		start = time.Now()
-	} else if node.GlobalViewID == 10000000066 && node.NodeID == "N0" {
+	} else if node.GlobalViewID == 10000000201 && node.NodeID == "N0" {
 		duration = time.Since(start)
 		// 打开文件，如果文件不存在则创建，如果文件存在则追加内容
 		fmt.Printf("  Function took %s\n", duration)
@@ -374,7 +374,7 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 			log.Fatal(err)
 		}
 
-	} else if node.GlobalViewID > 10000000066 && node.NodeID == "N0" {
+	} else if node.GlobalViewID > 10000000201 && node.NodeID == "N0" {
 		fmt.Printf("  Function took %s\n", duration)
 		//fmt.Printf("  Function took %s\n", duration)
 		//fmt.Printf("  Function took %s\n", duration)
