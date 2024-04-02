@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"simple_pbft/pbft/consensus"
 	"strconv"
 	"strings"
@@ -25,7 +26,10 @@ import (
 type Node struct {
 	NodeID    string
 	NodeTable map[string]map[string]string // key=nodeID, value=url
-	ReScore   map[string]map[string]uint8
+	ReScore   map[string]map[string]uint16
+	ReElement *ReElement
+
+	edges map[int][]int // 同于存储每一个公式中其他节点的活跃度
 
 	View           *View
 	CurrentState   *consensus.State
@@ -71,6 +75,11 @@ const (
 	NonCommittedNode                 // The ReqMsgs is processed successfully. The node is ready to head to the Prepare stage.
 )
 
+type ReElement struct {
+	Active       map[string]int   //活跃度
+	HistoryScore map[string][]int //历史分数
+}
+
 type MsgBufferLock struct {
 	ReqMsgsLock        sync.Mutex
 	PrePrepareMsgsLock sync.Mutex
@@ -109,6 +118,7 @@ const CommitteeNodeNumber = 4
 
 func NewNode(nodeID string, clusterName string) *Node {
 	const viewID = 10000000000 // temporary.
+	consensus.F = 1
 	node := &Node{
 		// Hard-coded for test.
 		NodeID: nodeID,
@@ -154,7 +164,7 @@ func NewNode(nodeID string, clusterName string) *Node {
 			PendingMsgs:    make([]*consensus.RequestMsg, 0),
 		},
 		MsgBufferLock: &MsgBufferLock{},
-		ReScore:       make(map[string]map[string]uint8),
+		ReScore:       make(map[string]map[string]uint16),
 
 		GlobalLog: &consensus.GlobalLog{
 			MsgLogs: make(map[string]map[int64]*consensus.RequestMsg),
@@ -172,6 +182,14 @@ func NewNode(nodeID string, clusterName string) *Node {
 		MsgRequsetchan:    make(chan interface{}, 50),
 		Alarm:             make(chan bool),
 
+		// 初始化边
+		edges: make(map[int][]int),
+
+		ReElement: &ReElement{
+			Active:       make(map[string]int),
+			HistoryScore: make(map[string][]int),
+		},
+
 		// 所属集群
 		ClusterName:  clusterName,
 		GlobalViewID: viewID,
@@ -186,11 +204,11 @@ func NewNode(nodeID string, clusterName string) *Node {
 		}
 	}
 
-	//初始化每个节点的分数为70分
+	//初始化每个节点的分数为400分
 	for cluster, nodes := range node.NodeTable {
-		node.ReScore[cluster] = make(map[string]uint8) // 为每个集群初始化内部 map
+		node.ReScore[cluster] = make(map[string]uint16) // 为每个集群初始化内部 map
 		for key, _ := range nodes {
-			node.ReScore[cluster][key] = 70
+			node.ReScore[cluster][key] = 400
 		}
 	}
 
@@ -241,6 +259,26 @@ func NewNode(nodeID string, clusterName string) *Node {
 	go node.resolveGlobalMsg()
 
 	return node
+}
+
+// AddEdge 添加边到图中
+func (nodeEdge *Node) AddEdge(from, to int) {
+	if !nodeEdge.edgeExists(from, to) {
+		nodeEdge.edges[from] = append(nodeEdge.edges[from], to)
+	}
+	if !nodeEdge.edgeExists(to, from) {
+		nodeEdge.edges[to] = append(nodeEdge.edges[to], from) // 因为是无向图，所以要双向添加
+	}
+}
+
+// edgeExists 检查从from到to的边是否存在
+func (n *Node) edgeExists(from, to int) bool {
+	for _, node := range n.edges[from] {
+		if node == to {
+			return true
+		}
+	}
+	return false
 }
 
 // LoadNodeTable 从指定的文件路径加载 NodeTable
@@ -342,13 +380,12 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 	//	}*/
 	//}
 	fmt.Print("\n\n")
-	/*for _, cluster := range Allcluster {
-		for key, value := range node.ReScore[cluster] {
-			fmt.Printf("node %s score %d \n", key, value)
+	for _, cluster := range Allcluster {
+		for i := 0; i < 4; i++ {
+			nodeID := cluster + strconv.Itoa(i)
+			fmt.Printf("node %s score %d \n", nodeID, node.ReScore[cluster][nodeID])
 		}
 	}
-
-	*/
 
 	node.GlobalViewID++
 
@@ -485,7 +522,11 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 		return err
 	}
 
+	// 更新本节点收到的活跃节点
+	node.ReElement.Active[prepareMsg.NodeID] = 1
+
 	if commitMsg != nil {
+		node.ReElement.Active[node.NodeID] = 1
 		// Attach node ID to the message 同时对摘要签名
 		commitMsg.NodeID = node.NodeID
 		signInfo := node.RsaSignWithSha256(digest, node.rsaPrivKey)
@@ -494,6 +535,7 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 		// 将投票状态共享给其他节点
 		for _, value := range node.CurrentState.MsgLogs.PrepareMsgs {
 			commitMsg.Score[value.NodeID] = true
+
 		}
 
 		//LogStage("Prepare", true)
@@ -543,26 +585,84 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 		for key, _ := range node.NodeTable[node.ClusterName] {
 			updateFlag[key] = false
 		}
-		// 首先增加投票节点的分数，然后增加节点中收到的其他节点的投票的信息
+		// 先更新每个节点的活跃度
 		for _, value := range node.CurrentState.MsgLogs.CommitMsgs {
-			id := value.NodeID
-			if !updateFlag[id] {
-				updateFlag[id] = true // 更新节点需要将标志置位true
-				if node.ReScore[node.ClusterName][id] < 90 {
-					node.ReScore[node.ClusterName][id] += 1
-				}
-			}
-			for key, vote := range value.Score {
+			for nodeId, vote := range value.Score {
 				if vote == true {
-					if !updateFlag[key] {
-						updateFlag[key] = true
-						if node.ReScore[node.ClusterName][key] < 90 {
-							node.ReScore[node.ClusterName][key] += 1
-						}
-					}
+					node.ReElement.Active[nodeId]++
 				}
 			}
 		}
+
+		// 判断节点是否共识成功
+		// 记得CommitteeNodeNumber后面换成活跃的委员会节点集合
+		for i := 0; i < CommitteeNodeNumber; i++ {
+			nodeID := node.ClusterName + strconv.Itoa(i)
+			// 主节点在prepare阶段时不会发送消息的所以不会计算active，直接增加信用值
+			if nodeID == node.View.Primary {
+				node.ReScore[node.ClusterName][nodeID] += 30
+				continue
+			}
+
+			active := node.ReElement.Active[nodeID]
+			historySuccessRate := 0
+			success := 0
+			sum := 0
+			// 通过nodeID获取对应的整数切片
+			scores, exists := node.ReElement.HistoryScore[nodeID]
+			if exists {
+				// 迭代整数切片并计算总和
+				for _, value := range scores {
+					sum += value
+				}
+				historySuccessRate = int(sum/len(node.ReElement.HistoryScore[nodeID])) * 10
+			}
+
+			// 如果活跃度为 0 ，当前节点的此次共识结果为失败，信用值减少
+			if active == 0 {
+				fmt.Printf("节点 %s 不活跃！\n", nodeID)
+				node.ReElement.HistoryScore[nodeID] = append(node.ReElement.HistoryScore[nodeID], -1)
+				success = -30
+				active = -40
+			} else {
+				node.ReElement.HistoryScore[nodeID] = append(node.ReElement.HistoryScore[nodeID], 1)
+				success = 10
+				// 假设 active 和 CommitteeNodeNumber 都是 int 类型
+				activeFloat := float64(active)                     // 将 active 转换为浮点数
+				committeeFloat := float64(CommitteeNodeNumber - 1) // 将 CommitteeNodeNumber - 1 转换为浮点数
+
+				// 使用浮点数进行计算以保留小数部分
+				active = int((activeFloat / committeeFloat) * 20) // 最后将结果转换回 int 类型
+
+			}
+			CurrentScore := int(node.ReScore[node.ClusterName][nodeID])
+			//fmt.Printf("Node %s Acitve %d Success %d historySuccessRate %d\n", nodeID, active, success, historySuccessRate)
+			node.ReScore[node.ClusterName][nodeID] = uint16(min(1000, max(0, CurrentScore+active+success+historySuccessRate)))
+
+		}
+
+		node.ReElement.Active = make(map[string]int)
+
+		// 首先增加投票节点的分数，然后增加节点中收到的其他节点的投票的信息
+		//for _, value := range node.CurrentState.MsgLogs.CommitMsgs {
+		//	id := value.NodeID
+		//	//if !updateFlag[id] {
+		//	//	updateFlag[id] = true // 更新节点需要将标志置位true
+		//	//	if node.ReScore[node.ClusterName][id] < 900 {
+		//	//		node.ReScore[node.ClusterName][id] += 1
+		//	//	}
+		//	//}
+		//	for key, vote := range value.Score {
+		//		//if vote == true {
+		//		if !updateFlag[key] {
+		//			updateFlag[key] = true
+		//			if node.ReScore[node.ClusterName][key] < 900 {
+		//				node.ReScore[node.ClusterName][key] += 1
+		//			}
+		//		}
+		//		//}
+		//	}
+		//}
 
 		//LogStage("Commit", true)
 		fmt.Printf("ViewID :%d %s 达成本地共识，存入待执行缓存池\n", node.View.ID, committedMsg.Operation)
@@ -624,7 +724,7 @@ func (node *Node) PrimaryNodeShareMsg() error {
 		GlobalShareMsg.ViewID = node.GlobalViewID
 
 		if GlobalShareMsg.Score == nil {
-			GlobalShareMsg.Score = make(map[string]uint8)
+			GlobalShareMsg.Score = make(map[string]uint16)
 		}
 		for key, value := range node.ReScore[node.ClusterName] {
 			GlobalShareMsg.Score[key] = value
@@ -1116,12 +1216,12 @@ func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
 	fmt.Printf("Global stage ID %s %d\n", reqMsg.GlobalShareMsg.Cluster, reqMsg.GlobalShareMsg.ViewID)
 	node.GlobalViewIDLock.Lock()
 	// 首先判断当前消息不是来自本地集群的全局共识消息（因为本地的信誉值已经更新过）
-	if reqMsg.GlobalShareMsg.Cluster != node.ClusterName {
-		// 更新其他集群节点的信誉值
-		for key, value := range reqMsg.GlobalShareMsg.Score {
-			node.ReScore[reqMsg.GlobalShareMsg.Cluster][key] = value
-		}
+	//if reqMsg.GlobalShareMsg.Cluster != node.ClusterName {
+	// 更新其他集群节点的信誉值
+	for key, value := range reqMsg.GlobalShareMsg.Score {
+		node.ReScore[reqMsg.GlobalShareMsg.Cluster][key] = value
 	}
+	//}
 	node.Reply(node.GlobalViewID, reqMsg.GlobalShareMsg.RequestMsg, replyMsg.ViewID)
 
 	node.GlobalViewIDLock.Unlock()
@@ -1292,4 +1392,23 @@ func (node *Node) RsaVerySignWithSha256(data, signData, keyBytes []byte) bool {
 		panic(err)
 	}
 	return true
+}
+
+// ExtractNumber 从形如"N0", "M29"的字符串中提取数字
+func (node *Node) ExtractNumber(s string) (int, error) {
+	// 使用正则表达式匹配字符串中的数字部分
+	re := regexp.MustCompile(`\d+`)
+	matches := re.FindString(s) // 直接使用FindString获取匹配的字符串
+
+	if matches == "" {
+		return 0, fmt.Errorf("no digits found in string: %s", s)
+	}
+
+	// 将匹配到的数字字符串转换为int类型
+	num, err := strconv.Atoi(matches)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert '%s' to int: %s", matches, err)
+	}
+
+	return num, nil
 }
