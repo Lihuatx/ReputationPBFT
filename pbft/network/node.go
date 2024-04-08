@@ -30,8 +30,6 @@ type Node struct {
 	ActiveCommitteeNode map[string]NodeType
 	ReElement           *ReElement
 
-	edges map[int][]int // 同于存储每一个公式中其他节点的活跃度
-
 	View           *View
 	CurrentState   *consensus.State
 	CommittedMsgs  []*consensus.RequestMsg // kinda block.
@@ -193,9 +191,6 @@ func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 		MsgRequsetchan:    make(chan interface{}, 100),
 		Alarm:             make(chan bool),
 
-		// 初始化边
-		edges: make(map[int][]int),
-
 		ReElement: &ReElement{
 			Active:       make(map[string]int),
 			HistoryScore: make(map[string][]int),
@@ -281,26 +276,6 @@ func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 	go node.resolveGlobalMsg()
 
 	return node
-}
-
-// AddEdge 添加边到图中
-func (nodeEdge *Node) AddEdge(from, to int) {
-	if !nodeEdge.edgeExists(from, to) {
-		nodeEdge.edges[from] = append(nodeEdge.edges[from], to)
-	}
-	if !nodeEdge.edgeExists(to, from) {
-		nodeEdge.edges[to] = append(nodeEdge.edges[to], from) // 因为是无向图，所以要双向添加
-	}
-}
-
-// edgeExists 检查从from到to的边是否存在
-func (n *Node) edgeExists(from, to int) bool {
-	for _, node := range n.edges[from] {
-		if node == to {
-			return true
-		}
-	}
-	return false
 }
 
 // LoadNodeTable 从指定的文件路径加载 NodeTable
@@ -417,9 +392,9 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 	node.GlobalViewID++
 
 	const viewID = 10000000000 // temporary.
-	if node.GlobalViewID == viewID+99 {
+	if node.GlobalViewID == viewID+100 {
 		start = time.Now()
-	} else if node.GlobalViewID == 10000000201 && node.NodeID == "N0" {
+	} else if node.GlobalViewID == 10000000200 && node.NodeID == "N0" {
 		duration = time.Since(start)
 		// 打开文件，如果文件不存在则创建，如果文件存在则追加内容
 		fmt.Printf("  Function took %s\n", duration)
@@ -444,13 +419,13 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 		//fmt.Printf("  Function took %s\n", duration)
 	}
 
-	jsonMsg, err := json.Marshal(ReplyMsg)
-	if err != nil {
-		return false, ViewID
-	}
-
-	// 系统中没有设置用户，reply消息直接发送给主节点
-	send("127.0.0.1:5000/reply", jsonMsg)
+	//jsonMsg, err := json.Marshal(ReplyMsg)
+	//if err != nil {
+	//	return false, ViewID
+	//}
+	//
+	//// 系统中没有设置用户，reply消息直接发送给主节点
+	//send("127.0.0.1:5000/reply", jsonMsg)
 
 	return true, ViewID + 1
 }
@@ -630,7 +605,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 		// 判断节点是否共识成功
 		// 记得CommitteeNodeNumber后面换成活跃的委员会节点集合
 		for nodeID, isActive := range node.ActiveCommitteeNode {
-			if isActive != CommitteeNode || node.View.Primary != node.NodeID { //如果不是委员会节点就跳过,测试一下非主节点也跳过
+			if isActive != CommitteeNode { //如果不是委员会节点就跳过
 				continue
 			}
 			// 主节点在prepare阶段时不会发送消息的所以不会计算active，直接增加信用值
