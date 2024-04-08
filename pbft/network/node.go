@@ -24,10 +24,11 @@ import (
 )
 
 type Node struct {
-	NodeID    string
-	NodeTable map[string]map[string]string // key=nodeID, value=url
-	ReScore   map[string]map[string]uint16
-	ReElement *ReElement
+	NodeID              string
+	NodeTable           map[string]map[string]string // key=nodeID, value=url
+	ReScore             map[string]map[string]uint16 // cluster , nodeID , score
+	ActiveCommitteeNode map[string]NodeType
+	ReElement           *ReElement
 
 	edges map[int][]int // 同于存储每一个公式中其他节点的活跃度
 
@@ -53,7 +54,8 @@ type Node struct {
 
 	GlobalViewIDLock sync.Mutex
 
-	NodeType NodeType
+	NodeType      NodeType
+	MaliciousNode MaliciousNode
 
 	//RSA私钥
 	rsaPrivKey []byte
@@ -71,8 +73,15 @@ type Node struct {
 type NodeType int
 
 const (
-	CommitteeNode    NodeType = iota // Node is created successfully, but the consensus process is not started yet.
-	NonCommittedNode                 // The ReqMsgs is processed successfully. The node is ready to head to the Prepare stage.
+	NonCommittedNode NodeType = iota // Node is created successfully, but the consensus process is not started yet.
+	CommitteeNode                    // The ReqMsgs is processed successfully. The node is ready to head to the Prepare stage.
+)
+
+type MaliciousNode int
+
+const (
+	isMaliciousNode  MaliciousNode = iota // Node is created successfully, but the consensus process is not started yet.
+	NonMaliciousNode                      // The ReqMsgs is processed successfully. The node is ready to head to the Prepare stage.
 )
 
 type ReElement struct {
@@ -114,9 +123,11 @@ var PrimaryNode = map[string]string{
 var Allcluster = []string{"N", "M", "P"}
 
 const ResolvingTimeDuration = time.Millisecond * 1000 // 1 second.
-const CommitteeNodeNumber = 4
+var CommitteeNodeNumber = 4                           // 定义委员会节点变量
+var BaseReScore uint16 = 400
+var ReScoretThreshold uint16 = 200
 
-func NewNode(nodeID string, clusterName string) *Node {
+func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 	const viewID = 10000000000 // temporary.
 	consensus.F = 1
 	node := &Node{
@@ -175,11 +186,11 @@ func NewNode(nodeID string, clusterName string) *Node {
 		},
 
 		// Channels
-		MsgEntrance:       make(chan interface{}, 50),
-		MsgDelivery:       make(chan interface{}, 10),
-		MsgGlobal:         make(chan interface{}, 50),
-		MsgGlobalDelivery: make(chan interface{}, 50),
-		MsgRequsetchan:    make(chan interface{}, 50),
+		MsgEntrance:       make(chan interface{}, 100),
+		MsgDelivery:       make(chan interface{}, 100),
+		MsgGlobal:         make(chan interface{}, 100),
+		MsgGlobalDelivery: make(chan interface{}, 100),
+		MsgRequsetchan:    make(chan interface{}, 100),
 		Alarm:             make(chan bool),
 
 		// 初始化边
@@ -189,13 +200,18 @@ func NewNode(nodeID string, clusterName string) *Node {
 			Active:       make(map[string]int),
 			HistoryScore: make(map[string][]int),
 		},
-
+		ActiveCommitteeNode: make(map[string]NodeType),
 		// 所属集群
 		ClusterName:  clusterName,
 		GlobalViewID: viewID,
 	}
 
 	node.NodeTable = LoadNodeTable("nodetable.txt")
+	if ismaliciousNode == "Y" {
+		node.MaliciousNode = isMaliciousNode
+	} else {
+		node.MaliciousNode = NonMaliciousNode
+	}
 
 	// 初始化全局消息日志
 	for _, key := range Allcluster {
@@ -208,7 +224,7 @@ func NewNode(nodeID string, clusterName string) *Node {
 	for cluster, nodes := range node.NodeTable {
 		node.ReScore[cluster] = make(map[string]uint16) // 为每个集群初始化内部 map
 		for key, _ := range nodes {
-			node.ReScore[cluster][key] = 400
+			node.ReScore[cluster][key] = BaseReScore
 		}
 	}
 
@@ -242,6 +258,12 @@ func NewNode(nodeID string, clusterName string) *Node {
 		node.NodeType = NonCommittedNode
 		fmt.Printf("节点 %s 是非委员会节点！\n", node.NodeID)
 	}
+	// 初始化委员会节点
+	for i := 0; i < CommitteeNodeNumber; i++ {
+		nodeID := node.ClusterName + strconv.Itoa(i)
+		node.ActiveCommitteeNode[nodeID] = CommitteeNode
+	}
+	consensus.F = CommitteeNodeNumber / 3
 
 	// 专门用于收取客户端请求,防止堵塞其他线程
 	go node.resolveClientRequest()
@@ -380,10 +402,15 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 	//	}*/
 	//}
 	fmt.Print("\n\n")
-	for _, cluster := range Allcluster {
-		for i := 0; i < 4; i++ {
-			nodeID := cluster + strconv.Itoa(i)
-			fmt.Printf("node %s score %d \n", nodeID, node.ReScore[cluster][nodeID])
+	//for _, cluster := range Allcluster {
+	//	for i := 0; i < 4; i++ {
+	//		nodeID := cluster + strconv.Itoa(i)
+	//		fmt.Printf("node %s score %d \n", nodeID, node.ReScore[cluster][nodeID])
+	//	}
+	//}
+	for value, _type := range node.ActiveCommitteeNode {
+		if _type == CommitteeNode {
+			fmt.Printf("node %s score %d \n", value, node.ReScore[node.ClusterName][value])
 		}
 	}
 
@@ -495,7 +522,7 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg, goOn boo
 		prePareMsg.Sign = signInfo
 
 		//LogStage("Pre-prepare", true)
-		if node.NodeType == CommitteeNode {
+		if node.NodeType == CommitteeNode && node.MaliciousNode != isMaliciousNode {
 			node.Broadcast(node.ClusterName, prePareMsg, "/prepare")
 		}
 		//LogStage("Prepare", false)
@@ -506,6 +533,9 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg, goOn boo
 
 func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 	if node.CurrentState.CurrentStage == consensus.Prepared {
+		return nil
+	}
+	if node.ActiveCommitteeNode[prepareMsg.NodeID] == NonCommittedNode {
 		return nil
 	}
 
@@ -539,7 +569,7 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 		}
 
 		//LogStage("Prepare", true)
-		if node.NodeType == CommitteeNode {
+		if node.NodeType == CommitteeNode && node.MaliciousNode != isMaliciousNode {
 			node.Broadcast(node.ClusterName, commitMsg, "/commit")
 
 		}
@@ -552,6 +582,9 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 	// 当节点已经完成Committed阶段后就停止接收其他节点的Committed消息
 	if node.CurrentState.CurrentStage == consensus.Committed {
+		return nil
+	}
+	if node.ActiveCommitteeNode[commitMsg.NodeID] == NonCommittedNode {
 		return nil
 	}
 
@@ -596,8 +629,10 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 
 		// 判断节点是否共识成功
 		// 记得CommitteeNodeNumber后面换成活跃的委员会节点集合
-		for i := 0; i < CommitteeNodeNumber; i++ {
-			nodeID := node.ClusterName + strconv.Itoa(i)
+		for nodeID, isActive := range node.ActiveCommitteeNode {
+			if isActive != CommitteeNode { //如果不是委员会节点就跳过
+				continue
+			}
 			// 主节点在prepare阶段时不会发送消息的所以不会计算active，直接增加信用值
 			if nodeID == node.View.Primary {
 				node.ReScore[node.ClusterName][nodeID] += 30
@@ -641,28 +676,8 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 
 		}
 
+		// 每一轮的活跃值要清空
 		node.ReElement.Active = make(map[string]int)
-
-		// 首先增加投票节点的分数，然后增加节点中收到的其他节点的投票的信息
-		//for _, value := range node.CurrentState.MsgLogs.CommitMsgs {
-		//	id := value.NodeID
-		//	//if !updateFlag[id] {
-		//	//	updateFlag[id] = true // 更新节点需要将标志置位true
-		//	//	if node.ReScore[node.ClusterName][id] < 900 {
-		//	//		node.ReScore[node.ClusterName][id] += 1
-		//	//	}
-		//	//}
-		//	for key, vote := range value.Score {
-		//		//if vote == true {
-		//		if !updateFlag[key] {
-		//			updateFlag[key] = true
-		//			if node.ReScore[node.ClusterName][key] < 900 {
-		//				node.ReScore[node.ClusterName][key] += 1
-		//			}
-		//		}
-		//		//}
-		//	}
-		//}
 
 		//LogStage("Commit", true)
 		fmt.Printf("ViewID :%d %s 达成本地共识，存入待执行缓存池\n", node.View.ID, committedMsg.Operation)
@@ -673,6 +688,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 
 		if node.NodeID == node.View.Primary { // 本地共识结束后，主节点将本地达成共识的请求发送至其他集群的主节点
 			node.PrimaryNodeShareMsg()
+
 		}
 
 		node.View.ID++
@@ -722,6 +738,7 @@ func (node *Node) PrimaryNodeShareMsg() error {
 		GlobalShareMsg.Digest = digest
 		GlobalShareMsg.Cluster = node.ClusterName
 		GlobalShareMsg.ViewID = node.GlobalViewID
+		GlobalShareMsg.AddNewCommitteeNodeID = nil
 
 		if GlobalShareMsg.Score == nil {
 			GlobalShareMsg.Score = make(map[string]uint16)
@@ -736,7 +753,57 @@ func (node *Node) PrimaryNodeShareMsg() error {
 			NodeID:         node.NodeID,
 			GlobalShareMsg: GlobalShareMsg,
 		}
+
+		// 同时调整参与委员会共识的活跃节点列表，删除分数不够的委员会节点
+		initActiveCommitteeNode := 0
+		numOfActiveCommitteeNode := 0
+		for nodeID, isActive := range node.ActiveCommitteeNode {
+			if isActive != CommitteeNode {
+				continue
+			}
+			initActiveCommitteeNode++
+			if node.ReScore[node.ClusterName][nodeID] < ReScoretThreshold {
+				if nodeID == node.NodeID {
+					node.NodeType = NonCommittedNode
+
+				}
+				node.ActiveCommitteeNode[nodeID] = NonCommittedNode
+				fmt.Printf("修改节点 %s 为非委员会节点！\n", nodeID)
+			} else {
+				numOfActiveCommitteeNode++
+			}
+		}
+		// 从非委员会节点中挑选信用值最高的节点作为委员会节点
+		newAddCommitteeNodeNum := initActiveCommitteeNode - numOfActiveCommitteeNode
+		for i := 0; newAddCommitteeNodeNum > 0; i++ {
+			var MaxReScore uint16 = 0
+			var changeID = 0
+			for j := 0; j < len(node.ReScore[node.ClusterName]); j++ {
+				if j > 6 { // 测试只有7个节点，后期删除
+					break
+				}
+				nodeID := node.ClusterName + strconv.Itoa(j)
+				if node.ActiveCommitteeNode[nodeID] == NonCommittedNode {
+					if node.ReScore[node.ClusterName][nodeID] > MaxReScore && node.ReScore[node.ClusterName][nodeID] >= ReScoretThreshold {
+						MaxReScore = node.ReScore[node.ClusterName][nodeID]
+						changeID = j
+					}
+				}
+			}
+
+			ChangeNodeID := node.ClusterName + strconv.Itoa(changeID)
+			node.ActiveCommitteeNode[ChangeNodeID] = CommitteeNode
+
+			GlobalShareMsg.AddNewCommitteeNodeID = append(GlobalShareMsg.AddNewCommitteeNodeID, ChangeNodeID)
+			fmt.Printf("增加节点 %s 为委员会节点!\n", ChangeNodeID)
+			newAddCommitteeNodeNum--
+		}
+
+		// 根据参与共识的委员会节点总数更新f值
+		//consensus.F = numOfActiveCommitteeNode / 3
+
 		node.Broadcast(node.ClusterName, sendMsg, "/GlobalToLocal")
+
 		// 主节点达成本地共识，进行全局共识的排序和执行
 		node.GlobalViewIDLock.Lock()
 		node.Reply(node.GlobalViewID, committedMsg, node.GlobalViewID)
@@ -1222,6 +1289,39 @@ func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
 		node.ReScore[reqMsg.GlobalShareMsg.Cluster][key] = value
 	}
 	//}
+
+	// 收到的是本地主节点发来的本地共识的全局共识，要更改参与委员会的节点数
+	if reqMsg.GlobalShareMsg.Cluster == node.ClusterName {
+		numOfActiveCommitteeNode := 0
+		for nodeID, isActive := range node.ActiveCommitteeNode {
+			if isActive != CommitteeNode {
+				continue
+			}
+			if node.ReScore[node.ClusterName][nodeID] < BaseReScore {
+				if nodeID == node.NodeID {
+					node.NodeType = NonCommittedNode
+				}
+				node.ActiveCommitteeNode[nodeID] = NonCommittedNode
+				fmt.Printf("修改节点 %s 为非委员会节点！\n", nodeID)
+
+			} else {
+				numOfActiveCommitteeNode++
+			}
+		}
+		// 如果有要新加入的委员会节点
+		if reqMsg.GlobalShareMsg.AddNewCommitteeNodeID != nil {
+			for _, value := range reqMsg.GlobalShareMsg.AddNewCommitteeNodeID {
+				node.ActiveCommitteeNode[value] = CommitteeNode
+				if value == node.NodeID { // 如果就是当前节点则更改本节点的type
+					node.NodeType = CommitteeNode
+					fmt.Printf("本节点 %s 设置为委员会节点！\n", value)
+				}
+				fmt.Printf("节点 %s 设置为委员会节点！\n", value)
+			}
+		}
+		//consensus.F = numOfActiveCommitteeNode / 3
+	}
+
 	node.Reply(node.GlobalViewID, reqMsg.GlobalShareMsg.RequestMsg, replyMsg.ViewID)
 
 	node.GlobalViewIDLock.Unlock()

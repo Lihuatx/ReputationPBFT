@@ -37,13 +37,14 @@ type VoteMsg struct {
 }
 
 type GlobalShareMsg struct {
-	Cluster    string           `json:"ClusterName"`
-	NodeID     string           `json:"nodeID"`
-	RequestMsg *RequestMsg      `json:"requestMsg"`
-	Digest     string           `json:"digest"`
-	Sign       []byte           `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
-	ViewID     int64            `json:"viewID"`
-	Score      map[string]uint8 `json:"score"`
+	Cluster               string            `json:"ClusterName"`
+	NodeID                string            `json:"nodeID"`
+	RequestMsg            *RequestMsg       `json:"requestMsg"`
+	Digest                string            `json:"digest"`
+	Sign                  []byte            `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+	ViewID                int64             `json:"viewID"`
+	Score                 map[string]uint16 `json:"score"`
+	AddNewCommitteeNodeID []string          `json:"AddNewCommitteeNodeID"` // 用于替换信用值不够的节点
 }
 
 // 在这里LocalMsg是上层主节点委员会中的消息

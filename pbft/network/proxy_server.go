@@ -15,8 +15,8 @@ type Server struct {
 
 var flag = false
 
-func NewServer(nodeID string, clusterName string) *Server {
-	node := NewNode(nodeID, clusterName)
+func NewServer(nodeID string, clusterName string, isMaliciousNode string) *Server {
+	node := NewNode(nodeID, clusterName, isMaliciousNode)
 	server := &Server{node.NodeTable[clusterName][nodeID], node}
 
 	server.setRoute()

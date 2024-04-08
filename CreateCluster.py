@@ -6,6 +6,8 @@ import sys
 command_template = './app'
 groups = ['N', 'M', 'P']
 nodes_per_group = 19
+arg = sys.argv[2]
+nodes_per_cluster = int(arg)
 
 # 生成命令列表
 commands = [(command_template, f'{group}{i}', group) for group in groups for i in range(nodes_per_group)]

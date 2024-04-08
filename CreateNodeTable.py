@@ -1,13 +1,19 @@
+import sys
+
 clusters = ['N', 'M', 'P']  # 集群的标识符
 nodes_per_cluster = 19  # 每个集群的节点数
+arg = sys.argv[1]
+nodes_per_cluster = int(arg)
+client = sys.argv[2]
+server = sys.argv[3]
 base_port = 1110  # 基础端口号
 
 # 初始化 NodeTable
-node_table = {cluster: {f"{cluster}{i}": f"47.107.59.211:{base_port + i + (clusters.index(cluster) * nodes_per_cluster)}"
+node_table = {cluster: {f"{cluster}{i}": f"{client}:{base_port + i + (clusters.index(cluster) * nodes_per_cluster)}"
                         for i in range(nodes_per_cluster)}
               for cluster in clusters}
 
-node_table_MP = {cluster: {f"{cluster}{i}": f"114.55.130.178:{base_port + i + (clusters.index(cluster) * nodes_per_cluster)}"
+node_table_MP = {cluster: {f"{cluster}{i}": f"{server}:{base_port + i + (clusters.index(cluster) * nodes_per_cluster)}"
                            for i in range(nodes_per_cluster)}
                  for cluster in clusters}
 

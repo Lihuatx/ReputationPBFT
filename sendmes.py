@@ -40,8 +40,8 @@ for i in range(80):
         $response = Invoke-WebRequest -Uri "114.55.130.178:1148/req" -Method POST -Headers $headers -Body $body
         """
     subprocess.Popen(['powershell', '-Command', ps_command])
-    subprocess.Popen(['powershell', '-Command', ps_command2])
-    subprocess.Popen(['powershell', '-Command', ps_command3])
+    # subprocess.Popen(['powershell', '-Command', ps_command2])
+    # subprocess.Popen(['powershell', '-Command', ps_command3])
     time.sleep(0.05)
 
 # 在新的PowerShell窗口中执行第五个命令
