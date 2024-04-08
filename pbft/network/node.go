@@ -762,7 +762,7 @@ func (node *Node) PrimaryNodeShareMsg() error {
 				continue
 			}
 			initActiveCommitteeNode++
-			if node.ReScore[node.ClusterName][nodeID] < ReScoretThreshold {
+			if node.ReScore[node.ClusterName][nodeID] < ReScoretThreshold && false {
 				if nodeID == node.NodeID {
 					node.NodeType = NonCommittedNode
 
@@ -1297,7 +1297,7 @@ func (node *Node) CommitGlobalMsgToLocal(reqMsg *consensus.LocalMsg) error {
 			if isActive != CommitteeNode {
 				continue
 			}
-			if node.ReScore[node.ClusterName][nodeID] < BaseReScore {
+			if node.ReScore[node.ClusterName][nodeID] < BaseReScore && false {
 				if nodeID == node.NodeID {
 					node.NodeType = NonCommittedNode
 				}

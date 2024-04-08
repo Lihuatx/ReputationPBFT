@@ -32,16 +32,16 @@ for i in range(80):
     ps_command2 = f"""
         $headers = @{{ "Content-Type" = "application/json" }}
         $body = '{{"clientID":"ahnhwi","operation":"SendMes2 - {i}","timestamp":{i}}}'
-        $response = Invoke-WebRequest -Uri "114.55.130.178:1129/req" -Method POST -Headers $headers -Body $body
+        $response = Invoke-WebRequest -Uri "114.55.130.178:1114/req" -Method POST -Headers $headers -Body $body
         """
     ps_command3 = f"""
         $headers = @{{ "Content-Type" = "application/json" }}
         $body = '{{"clientID":"ahnhwi","operation":"SendMes3 - {i}","timestamp":{i}}}'
-        $response = Invoke-WebRequest -Uri "114.55.130.178:1148/req" -Method POST -Headers $headers -Body $body
+        $response = Invoke-WebRequest -Uri "114.55.130.178:1118/req" -Method POST -Headers $headers -Body $body
         """
     subprocess.Popen(['powershell', '-Command', ps_command])
-    # subprocess.Popen(['powershell', '-Command', ps_command2])
-    # subprocess.Popen(['powershell', '-Command', ps_command3])
+    subprocess.Popen(['powershell', '-Command', ps_command2])
+    subprocess.Popen(['powershell', '-Command', ps_command3])
     time.sleep(0.05)
 
 # 在新的PowerShell窗口中执行第五个命令
