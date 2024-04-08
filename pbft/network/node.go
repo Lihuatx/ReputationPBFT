@@ -15,7 +15,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"regexp"
 	"simple_pbft/pbft/consensus"
 	"strconv"
 	"strings"
@@ -674,20 +673,24 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 	return nil
 }
 
+var waitToSendPendingMsgsIndex = -1
+
 func (node *Node) PrimaryNodeShareMsg() error {
 	// 判断当前节点是代理执行节点，且有要共享的本地共识
 	if Allcluster[node.GlobalViewID%int64(len(Allcluster))] == node.ClusterName && len(node.MsgBuffer.PendingMsgs) > 0 && node.MsgBuffer.PendingMsgs[len(node.MsgBuffer.PendingMsgs)-1].Send == false { // 如果轮询到本地主节点作为代理人，发送消息给全局和本地
 		//node.PendingMsgsLock.Lock()
 		// 找到本地缓存中第一个需要发送的本地共识
-		index := len(node.MsgBuffer.PendingMsgs) - 1
-		for {
-			if index == -1 {
-				break
-			} else if node.MsgBuffer.PendingMsgs[index].Send == true {
-				break
-			}
-			index--
-		}
+		//index := len(node.MsgBuffer.PendingMsgs) - 1
+		//for {
+		//	if index == -1 {
+		//		break
+		//	} else if node.MsgBuffer.PendingMsgs[index].Send == true {
+		//		break
+		//	}
+		//	index--
+		//}
+		index := waitToSendPendingMsgsIndex
+		waitToSendPendingMsgsIndex++
 		node.MsgBuffer.PendingMsgs[index+1].Send = true
 		committedMsg := node.MsgBuffer.PendingMsgs[index+1]
 		//node.MsgBuffer.PendingMsgs = node.MsgBuffer.PendingMsgs[1:]
@@ -1467,23 +1470,4 @@ func (node *Node) RsaVerySignWithSha256(data, signData, keyBytes []byte) bool {
 		panic(err)
 	}
 	return true
-}
-
-// ExtractNumber 从形如"N0", "M29"的字符串中提取数字
-func (node *Node) ExtractNumber(s string) (int, error) {
-	// 使用正则表达式匹配字符串中的数字部分
-	re := regexp.MustCompile(`\d+`)
-	matches := re.FindString(s) // 直接使用FindString获取匹配的字符串
-
-	if matches == "" {
-		return 0, fmt.Errorf("no digits found in string: %s", s)
-	}
-
-	// 将匹配到的数字字符串转换为int类型
-	num, err := strconv.Atoi(matches)
-	if err != nil {
-		return 0, fmt.Errorf("failed to convert '%s' to int: %s", matches, err)
-	}
-
-	return num, nil
 }
