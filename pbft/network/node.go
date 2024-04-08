@@ -630,7 +630,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 		// 判断节点是否共识成功
 		// 记得CommitteeNodeNumber后面换成活跃的委员会节点集合
 		for nodeID, isActive := range node.ActiveCommitteeNode {
-			if isActive != CommitteeNode { //如果不是委员会节点就跳过
+			if isActive != CommitteeNode || node.View.Primary != node.NodeID { //如果不是委员会节点就跳过,测试一下非主节点也跳过
 				continue
 			}
 			// 主节点在prepare阶段时不会发送消息的所以不会计算active，直接增加信用值
