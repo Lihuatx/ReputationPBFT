@@ -38,7 +38,7 @@ type Node struct {
 	MsgRequsetchan chan interface{}
 	Alarm          chan bool
 	// 全局消息日志和临时消息缓冲区
-	GlobalLog    *consensus.GlobalLog
+	//GlobalLog    *consensus.GlobalLog
 	GlobalBuffer *GlobalBuffer
 	GlobalViewID int64
 	// 请求消息的锁
@@ -130,32 +130,7 @@ func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 	node := &Node{
 		// Hard-coded for test.
 		NodeID: nodeID,
-		/*
-			NodeTable: map[string]map[string]string{
-				"N": {
-					"N0": "localhost:1111",
-					"N1": "localhost:1112",
-					"N2": "localhost:1113",
-					"N3": "localhost:1114",
-					"N4": "localhost:1115",
-				},
-				"M": {
-					"M0": "localhost:1116",
-					"M1": "localhost:1117",
-					"M2": "localhost:1118",
-					"M3": "localhost:1119",
-					"M4": "localhost:1120",
-				},
-				"P": {
-					"P0": "localhost:1121",
-					"P1": "localhost:1122",
-					"P2": "localhost:1123",
-					"P3": "localhost:1124",
-					"P4": "localhost:1125",
-				},
-			},
 
-		*/
 		View: &View{
 			ID:      viewID,
 			Primary: PrimaryNode[clusterName],
@@ -174,9 +149,9 @@ func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 		MsgBufferLock: &MsgBufferLock{},
 		ReScore:       make(map[string]map[string]uint16),
 
-		GlobalLog: &consensus.GlobalLog{
-			MsgLogs: make(map[string]map[int64]*consensus.RequestMsg),
-		},
+		//GlobalLog: &consensus.GlobalLog{
+		//	MsgLogs: make(map[string]map[int64]*consensus.RequestMsg),
+		//},
 		GlobalBuffer: &GlobalBuffer{
 			ReqMsg:       make([]*consensus.GlobalShareMsg, 0),
 			consensusMsg: make([]*consensus.LocalMsg, 0),
@@ -207,12 +182,12 @@ func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 		node.MaliciousNode = NonMaliciousNode
 	}
 
-	// 初始化全局消息日志
-	for _, key := range Allcluster {
-		if node.GlobalLog.MsgLogs[key] == nil {
-			node.GlobalLog.MsgLogs[key] = make(map[int64]*consensus.RequestMsg)
-		}
-	}
+	//// 初始化全局消息日志
+	//for _, key := range Allcluster {
+	//	if node.GlobalLog.MsgLogs[key] == nil {
+	//		node.GlobalLog.MsgLogs[key] = make(map[int64]*consensus.RequestMsg)
+	//	}
+	//}
 
 	//初始化每个节点的分数为400分
 	for cluster, nodes := range node.NodeTable {
@@ -222,12 +197,12 @@ func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 		}
 	}
 
-	// 为每个集群初始化GlobalLog
-	for _, key := range Allcluster {
-		if node.GlobalLog.MsgLogs[key] == nil {
-			node.GlobalLog.MsgLogs[key] = make(map[int64]*consensus.RequestMsg)
-		}
-	}
+	//// 为每个集群初始化GlobalLog
+	//for _, key := range Allcluster {
+	//	if node.GlobalLog.MsgLogs[key] == nil {
+	//		node.GlobalLog.MsgLogs[key] = make(map[int64]*consensus.RequestMsg)
+	//	}
+	//}
 
 	node.rsaPubKey = node.getPubKey(clusterName, nodeID)
 	node.rsaPrivKey = node.getPivKey(clusterName, nodeID)
@@ -322,7 +297,7 @@ func (node *Node) Broadcast(cluster string, msg interface{}, path string) map[st
 			errorMap[nodeID] = err
 			continue
 		}
-		// fmt.Printf("Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
+		//fmt.Printf("Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
 		send(url+path, jsonMsg)
 	}
 
@@ -347,7 +322,7 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 			errorMap[cluster][PrimaryNode[cluster]] = err
 			continue
 		}
-		// fmt.Printf("GloablMsg Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
+		//fmt.Printf("GloablMsg Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
 		send(url+path, jsonMsg)
 
 	}
@@ -382,18 +357,18 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 	//		fmt.Printf("node %s score %d \n", nodeID, node.ReScore[cluster][nodeID])
 	//	}
 	//}
-	for value, _type := range node.ActiveCommitteeNode {
-		if _type == CommitteeNode {
-			fmt.Printf("node %s score %d \n", value, node.ReScore[node.ClusterName][value])
-		}
-	}
+	//for value, _type := range node.ActiveCommitteeNode {
+	//	if _type == CommitteeNode {
+	//		fmt.Printf("node %s score %d \n", value, node.ReScore[node.ClusterName][value])
+	//	}
+	//}
 
 	node.GlobalViewID++
 
 	const viewID = 10000000000 // temporary.
 	if node.GlobalViewID == viewID+100 {
 		start = time.Now()
-	} else if node.GlobalViewID == 10000000200 && node.NodeID == "N0" {
+	} else if node.GlobalViewID == viewID+200 && node.NodeID == "N0" {
 		duration = time.Since(start)
 		// 打开文件，如果文件不存在则创建，如果文件存在则追加内容
 		fmt.Printf("  Function took %s\n", duration)
@@ -412,7 +387,7 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.RequestMsg, GloID int6
 			log.Fatal(err)
 		}
 
-	} else if node.GlobalViewID > 10000000201 && node.NodeID == "N0" {
+	} else if node.GlobalViewID > viewID+200 && node.NodeID == "N0" {
 		fmt.Printf("  Function took %s\n", duration)
 		//fmt.Printf("  Function took %s\n", duration)
 		//fmt.Printf("  Function took %s\n", duration)
@@ -554,7 +529,7 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 }
 
 func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
-	// 当节点已经完成Committed阶段后就停止接收其他节点的Committed消息
+	// 当节点已经完成Committed阶段后就停止接收其他节点的Committed消息，同时不接受非委员会节点的消息
 	if node.CurrentState.CurrentStage == consensus.Committed {
 		return nil
 	}
@@ -603,6 +578,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 
 		// 判断节点是否共识成功
 		// 记得CommitteeNodeNumber后面换成活跃的委员会节点集合
+
 		for nodeID, isActive := range node.ActiveCommitteeNode {
 			if isActive != CommitteeNode { //如果不是委员会节点就跳过
 				continue
@@ -775,6 +751,7 @@ func (node *Node) PrimaryNodeShareMsg() error {
 			GlobalShareMsg.AddNewCommitteeNodeID = append(GlobalShareMsg.AddNewCommitteeNodeID, ChangeNodeID)
 			fmt.Printf("增加节点 %s 为委员会节点!\n", ChangeNodeID)
 			newAddCommitteeNodeNum--
+
 		}
 
 		// 根据参与共识的委员会节点总数更新f值
@@ -1353,7 +1330,7 @@ func (node *Node) ShareGlobalMsgToLocal(reqMsg *consensus.GlobalShareMsg) error 
 	node.ShareLocalConsensus(reqMsg, "/global")
 	node.Broadcast(node.ClusterName, sendMsg, "/GlobalToLocal")
 
-	fmt.Printf("----- 收到其他委员会节点发来的全局共识，已发送给本地节点和其他委员会节点 -----\n")
+	//fmt.Printf("----- 收到其他委员会节点发来的全局共识，已发送给本地节点和其他委员会节点 -----\n")
 	// 执行全局共识消息
 	node.GlobalViewIDLock.Lock()
 	// 更新其他节点的信誉值
@@ -1362,9 +1339,12 @@ func (node *Node) ShareGlobalMsgToLocal(reqMsg *consensus.GlobalShareMsg) error 
 	}
 	node.Reply(node.GlobalViewID, reqMsg.RequestMsg, reqMsg.ViewID)
 	node.GlobalViewIDLock.Unlock()
-	node.PrimaryNodeExeLock.Lock()
-	node.PrimaryNodeShareMsg()
-	node.PrimaryNodeExeLock.Unlock()
+
+	if node.CurrentState.CurrentStage != consensus.Prepared {
+		node.PrimaryNodeExeLock.Lock()
+		node.PrimaryNodeShareMsg()
+		node.PrimaryNodeExeLock.Unlock()
+	}
 
 	return nil
 }

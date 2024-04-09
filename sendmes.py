@@ -22,22 +22,22 @@ $body = '{"clientID":"ahnhwi","operation":"SendMes3","timestamp":859381532}'
 $response = Invoke-WebRequest -Uri "http://114.55.130.178:1124/req" -Method POST -Headers $headers -Body $body
 """
 
-for i in range(80):
+for i in range(70):
     # 动态构建带有当前循环i值的PowerShell命令
     ps_command = f"""
         $headers = @{{ "Content-Type" = "application/json" }}
         $body = '{{"clientID":"ahnhwi","operation":"SendMes1 - {i}","timestamp":{i}}}'
-        $response = Invoke-WebRequest -Uri "47.107.59.211:1110/req" -Method POST -Headers $headers -Body $body
+        $response = Invoke-WebRequest -Uri "127.0.0.1:1110/req" -Method POST -Headers $headers -Body $body
         """
     ps_command2 = f"""
         $headers = @{{ "Content-Type" = "application/json" }}
         $body = '{{"clientID":"ahnhwi","operation":"SendMes2 - {i}","timestamp":{i}}}'
-        $response = Invoke-WebRequest -Uri "114.55.130.178:1114/req" -Method POST -Headers $headers -Body $body
+        $response = Invoke-WebRequest -Uri "127.0.0.1:1114/req" -Method POST -Headers $headers -Body $body
         """
     ps_command3 = f"""
         $headers = @{{ "Content-Type" = "application/json" }}
         $body = '{{"clientID":"ahnhwi","operation":"SendMes3 - {i}","timestamp":{i}}}'
-        $response = Invoke-WebRequest -Uri "114.55.130.178:1118/req" -Method POST -Headers $headers -Body $body
+        $response = Invoke-WebRequest -Uri "127.0.0.1:1118/req" -Method POST -Headers $headers -Body $body
         """
     subprocess.Popen(['powershell', '-Command', ps_command])
     subprocess.Popen(['powershell', '-Command', ps_command2])

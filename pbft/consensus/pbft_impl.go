@@ -123,7 +123,7 @@ func (state *State) Prepare(prepareMsg *VoteMsg) (*VoteMsg, error) {
 	state.MsgLogs.PrepareMsgs[prepareMsg.NodeID] = prepareMsg
 
 	// Print current voting status
-	fmt.Printf("[Prepare-Vote]: %d\n", len(state.MsgLogs.PrepareMsgs))
+	//fmt.Printf("[Prepare-Vote]: %d\n", len(state.MsgLogs.PrepareMsgs))
 
 	if state.prepared() {
 		// Change the stage to prepared.
@@ -151,7 +151,7 @@ func (state *State) Commit(commitMsg *VoteMsg) (*ReplyMsg, *RequestMsg, error) {
 	state.MsgLogs.CommitMsgs[commitMsg.NodeID] = commitMsg
 
 	// Print current voting status
-	fmt.Printf("[Commit-Vote]: %d\n", len(state.MsgLogs.CommitMsgs))
+	//fmt.Printf("[Commit-Vote]: %d\n", len(state.MsgLogs.CommitMsgs))
 
 	if state.committed() {
 		// This node executes the requested operation locally and gets the result.
