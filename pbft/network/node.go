@@ -330,7 +330,7 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 			errorMap[cluster][PrimaryNode[cluster]] = err
 			continue
 		}
-		//fmt.Printf("GloablMsg Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
+		fmt.Printf("GloablMsg Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
 		send(url+path, jsonMsg)
 
 	}
@@ -378,7 +378,7 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.BatchRequestMsg, GloID
 	const viewID = 10000000000 // temporary.
 	if len(node.CommittedMsgs) == 1 {
 		//start = time.Now()
-	} else if len(node.CommittedMsgs) == 120 && node.NodeID == "N0" {
+	} else if len(node.CommittedMsgs) == 3000 && node.NodeID == "N0" {
 		duration = time.Since(start)
 		// 打开文件，如果文件不存在则创建，如果文件存在则追加内容
 		fmt.Printf("  Function took %s\n", duration)
@@ -397,7 +397,7 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.BatchRequestMsg, GloID
 			log.Fatal(err)
 		}
 
-	} else if len(node.CommittedMsgs) > 120 && node.NodeID == "N0" {
+	} else if len(node.CommittedMsgs) > 3000 && node.NodeID == "N0" {
 		fmt.Printf("  Function took %s\n", duration)
 		//fmt.Printf("  Function took %s\n", duration)
 		//fmt.Printf("  Function took %s\n", duration)
@@ -1147,7 +1147,7 @@ func (node *Node) resolveGlobalShareMsg(msgs []*consensus.GlobalShareMsg) []erro
 	errs := make([]error, 0)
 
 	// Resolve messages
-	//fmt.Printf("len GlobalShareMsg msg %d\n", len(msgs))
+	fmt.Printf("获得其他节点的全局共识消息 %d\n", len(msgs))
 
 	for _, reqMsg := range msgs {
 		// 收到其他组的消息，转发给其他主节点节点
