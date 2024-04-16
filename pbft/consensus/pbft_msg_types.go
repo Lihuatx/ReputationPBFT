@@ -5,8 +5,14 @@ type RequestMsg struct {
 	ClientID   string `json:"clientID"`
 	Operation  string `json:"operation"`
 	SequenceID int64  `json:"sequenceID"`
-	URL        string `json:"url"` // 新增URL字段
-	Send       bool   `json:"Send"`
+}
+
+type BatchRequestMsg struct {
+	Requests   [BatchSize]*RequestMsg `json:"Requests"`
+	Timestamp  int64                  `json:"timestamp"`
+	ClientID   string                 `json:"clientID"`
+	SequenceID int64                  `json:"sequenceID"`
+	Send       bool                   `json:"Send"`
 }
 
 type ReplyMsg struct {
@@ -18,12 +24,12 @@ type ReplyMsg struct {
 }
 
 type PrePrepareMsg struct {
-	ViewID     int64       `json:"viewID"`
-	SequenceID int64       `json:"sequenceID"`
-	Digest     string      `json:"digest"`
-	NodeID     string      `json:"nodeID"` //添加nodeID
-	RequestMsg *RequestMsg `json:"requestMsg"`
-	Sign       []byte      `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+	ViewID     int64            `json:"viewID"`
+	SequenceID int64            `json:"sequenceID"`
+	Digest     string           `json:"digest"`
+	NodeID     string           `json:"nodeID"` //添加nodeID
+	RequestMsg *BatchRequestMsg `json:"requestMsg"`
+	Sign       []byte           `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
 }
 
 type VoteMsg struct {
@@ -39,7 +45,7 @@ type VoteMsg struct {
 type GlobalShareMsg struct {
 	Cluster               string            `json:"ClusterName"`
 	NodeID                string            `json:"nodeID"`
-	RequestMsg            *RequestMsg       `json:"requestMsg"`
+	RequestMsg            *BatchRequestMsg  `json:"requestMsg"`
 	Digest                string            `json:"digest"`
 	Sign                  []byte            `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
 	ViewID                int64             `json:"viewID"`
@@ -60,5 +66,7 @@ const (
 	PrepareMsg MsgType = iota
 	CommitMsg
 )
+
+const BatchSize = 10
 
 var GlobalViewID int

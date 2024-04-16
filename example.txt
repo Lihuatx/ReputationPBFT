@@ -30,3 +30,11 @@ durtion: 383.7427ms
 durtion: 2.6437443s
 durtion: 2.4984497s
 durtion: 883.023ms
+durtion: 1.5315375s
+durtion: 1.9692617s
+durtion: 560.1248ms
+durtion: 506.0494ms
+durtion: 4.1072806s
+durtion: 11.3312527s
+durtion: 6.2008025s
+durtion: 2.7531495s

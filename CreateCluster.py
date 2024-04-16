@@ -21,6 +21,7 @@ def run_commands(arg):
 
     # 等待一段时间以确保编译完成
     print("Waiting for build to finish...")
+    print("Create %s cluster" % arg)
     time.sleep(1)
 
     subprocess.run(['tmux', 'new-session', '-d', '-s', 'myPBFT'])
@@ -73,7 +74,5 @@ if __name__ == "__main__":
         print("Usage: python script.py <arg>")
         sys.exit(1)
     arg = sys.argv[1]
-    if arg == "N":
-        run_commands(arg)
-    else:
-        run_commands_MP()
+    run_commands(arg)
+

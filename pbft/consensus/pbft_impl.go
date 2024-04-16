@@ -15,11 +15,11 @@ type State struct {
 }
 
 type GlobalLog struct {
-	MsgLogs map[string]map[int64]*RequestMsg // cluster - ViewID - msg
+	MsgLogs map[string]map[int64]*BatchRequestMsg // cluster - ViewID - msg
 }
 
 type MsgLogs struct {
-	ReqMsg      *RequestMsg
+	ReqMsg      *BatchRequestMsg
 	PrepareMsgs map[string]*VoteMsg
 	CommitMsgs  map[string]*VoteMsg
 }
@@ -56,7 +56,7 @@ func CreateState(viewID int64, lastSequenceID int64) *State {
 	}
 }
 
-func (state *State) StartConsensus(request *RequestMsg) (*PrePrepareMsg, error) {
+func (state *State) StartConsensus(request *BatchRequestMsg) (*PrePrepareMsg, error) {
 	// `sequenceID` will be the index of this message.
 	sequenceID := time.Now().UnixNano()
 	// fmt.Printf("test import where")
@@ -68,6 +68,9 @@ func (state *State) StartConsensus(request *RequestMsg) (*PrePrepareMsg, error) 
 	}
 
 	// Assign a new sequence ID to the request message object.
+	for _, value := range request.Requests {
+		value.SequenceID = sequenceID
+	}
 	request.SequenceID = sequenceID
 
 	// Save ReqMsgs to its logs.
@@ -116,6 +119,7 @@ func (state *State) PrePrepare(prePrepareMsg *PrePrepareMsg) (*VoteMsg, error) {
 func (state *State) Prepare(prepareMsg *VoteMsg) (*VoteMsg, error) {
 	if !state.verifyMsg(prepareMsg.ViewID, prepareMsg.SequenceID, prepareMsg.Digest) {
 		fmt.Printf("prepare message is corrupted ------ 1\n")
+		fmt.Printf("ViewID: %d\n", prepareMsg.ViewID)
 		return nil, errors.New("prepare message is corrupted")
 	}
 
@@ -123,7 +127,7 @@ func (state *State) Prepare(prepareMsg *VoteMsg) (*VoteMsg, error) {
 	state.MsgLogs.PrepareMsgs[prepareMsg.NodeID] = prepareMsg
 
 	// Print current voting status
-	//fmt.Printf("[Prepare-Vote]: %d\n", len(state.MsgLogs.PrepareMsgs))
+	fmt.Printf("[Prepare-Vote]: %d\n", len(state.MsgLogs.PrepareMsgs))
 
 	if state.prepared() {
 		// Change the stage to prepared.
@@ -141,7 +145,7 @@ func (state *State) Prepare(prepareMsg *VoteMsg) (*VoteMsg, error) {
 	return nil, nil
 }
 
-func (state *State) Commit(commitMsg *VoteMsg) (*ReplyMsg, *RequestMsg, error) {
+func (state *State) Commit(commitMsg *VoteMsg) (*ReplyMsg, *BatchRequestMsg, error) {
 	if !state.verifyMsg(commitMsg.ViewID, commitMsg.SequenceID, commitMsg.Digest) {
 		fmt.Printf("commit message is corrupted ------ 1\n")
 		return nil, nil, errors.New("commit message is corrupted")
@@ -151,7 +155,7 @@ func (state *State) Commit(commitMsg *VoteMsg) (*ReplyMsg, *RequestMsg, error) {
 	state.MsgLogs.CommitMsgs[commitMsg.NodeID] = commitMsg
 
 	// Print current voting status
-	//fmt.Printf("[Commit-Vote]: %d\n", len(state.MsgLogs.CommitMsgs))
+	fmt.Printf("[Commit-Vote]: %d\n", len(state.MsgLogs.CommitMsgs))
 
 	if state.committed() {
 		// This node executes the requested operation locally and gets the result.
