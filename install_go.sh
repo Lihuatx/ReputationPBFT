@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 设置Go语言版本
-GO_VERSION="1.20.1"
+GO_VERSION="1.21.1"
 GO_TAR_FILE="go$GO_VERSION.linux-amd64.tar.gz"
 
 # 下载地址
