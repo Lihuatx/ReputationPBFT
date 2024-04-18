@@ -210,7 +210,7 @@ func (state *State) prepared() bool {
 		return false
 	}
 
-	if len(state.MsgLogs.PrepareMsgs) < 2*F-1 {
+	if len(state.MsgLogs.PrepareMsgs) < 2*F {
 		return false
 	}
 

@@ -22,16 +22,10 @@ import (
 	"time"
 )
 
-type NodeScore struct {
-	NodeID string
-	Score  int
-}
-
 type Node struct {
 	NodeID              string
 	NodeTable           map[string]map[string]string // key=nodeID, value=url
 	ReScore             map[string]map[string]uint16 // cluster , nodeID , score
-	SaveScore           []NodeScore
 	ActiveCommitteeNode map[string]NodeType
 	ReElement           *ReElement
 
@@ -382,8 +376,6 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.BatchRequestMsg, GloID
 		duration = time.Since(start)
 		// 打开文件，如果文件不存在则创建，如果文件存在则追加内容
 		fmt.Printf("  Function took %s\n", duration)
-		//fmt.Printf("  Function took %s\n", duration)
-		//fmt.Printf("  Function took %s\n", duration)
 
 		file, err := os.OpenFile("example.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -537,6 +529,33 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 	return nil
 }
 
+// 保存委员会节点信用分数
+func (node *Node) appendScoresToFile(filename string) {
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+		return
+	}
+	defer file.Close()
+
+	// 写入每轮的数据
+	_, err = file.WriteString(fmt.Sprintf("Round %d:\n", node.View.ID-10000000000))
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+		return
+	}
+	for value, _type := range node.ActiveCommitteeNode {
+		if _type == CommitteeNode {
+			line := fmt.Sprintf("%s: %d\n", value, node.ReScore[node.ClusterName][value])
+			_, err := file.WriteString(line)
+			if err != nil {
+				fmt.Println("Error writing to file:", err)
+				return
+			}
+		}
+	}
+}
+
 func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 	// 当节点已经完成Committed阶段后就停止接收其他节点的Committed消息，同时不接受非委员会节点的消息
 	if node.CurrentState.CurrentStage == consensus.Committed {
@@ -582,14 +601,15 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 
 		// 判断节点是否共识成功
 		// 记得CommitteeNodeNumber后面换成活跃的委员会节点集合
-
+		sumOfAddScore := 0 // 增加的总分数
+		AddNodeNum := 0    // 本轮共识中非恶意节点数
 		for nodeID, isActive := range node.ActiveCommitteeNode {
 			if isActive != CommitteeNode { //如果不是委员会节点就跳过
 				continue
 			}
 			// 主节点在prepare阶段时不会发送消息的所以不会计算active，直接增加信用值
 			if nodeID == node.View.Primary {
-				node.ReScore[node.ClusterName][nodeID] = uint16(min(1000, node.ReScore[node.ClusterName][nodeID]+30))
+				//node.ReScore[node.ClusterName][nodeID] = uint16(min(1000, node.ReScore[node.ClusterName][nodeID]+30))
 				continue
 			}
 
@@ -614,6 +634,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 				success = -30
 				active = -40
 			} else {
+				AddNodeNum++
 				node.ReElement.HistoryScore[nodeID] = append(node.ReElement.HistoryScore[nodeID], 1)
 				success = 10
 				// 假设 active 和 CommitteeNodeNumber 都是 int 类型
@@ -627,12 +648,17 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 			CurrentScore := int(node.ReScore[node.ClusterName][nodeID])
 			//fmt.Printf("Node %s Acitve %d Success %d historySuccessRate %d\n", nodeID, active, success, historySuccessRate)
 			node.ReScore[node.ClusterName][nodeID] = uint16(min(1000, max(0, CurrentScore+active+success+historySuccessRate)))
-
+			sumOfAddScore += active + success + historySuccessRate
 		}
+		//主节点的更新分数为所有更增加分数的平均值+10
+		primaryAddScore := uint16(sumOfAddScore/AddNodeNum + 10)
+		node.ReScore[node.ClusterName][node.View.Primary] = uint16(min(1000, node.ReScore[node.ClusterName][node.View.Primary]+primaryAddScore))
 
 		// 每一轮的活跃值要清空
 		node.ReElement.Active = make(map[string]int)
-
+		if node.ClusterName == "N" && node.NodeID == node.View.Primary {
+			node.appendScoresToFile("scores.txt")
+		}
 		LogStage("Commit", true)
 		fmt.Printf("ViewID :%d 达成本地共识，存入待执行缓存池\n", node.View.ID)
 

@@ -1,14 +1,27 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"simple_pbft/pbft/network"
 )
+
+func saveScoresToText(filename string) {
+	// 初始化文件
+	file, err := os.Create(filename)
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+	defer file.Close()
+}
 
 func main() {
 	genRsaKeys("N")
 	genRsaKeys("M")
 	genRsaKeys("P")
+	saveScoresToText("scores.txt") // 初始化文件并准备写入
+
 	nodeID := os.Args[1]
 	clusterName := os.Args[2]
 	// 设置默认值

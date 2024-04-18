@@ -19,16 +19,18 @@ REM 第二个参数赋值给 z
 set z=%2
 
 REM 第三个参数赋值给 client
-set client=%3
+set server1=%3
 
 REM 第四个参数赋值给 server
-set server=%4
+set server2=%4
+
+set server3=%5
 
 REM 第五个参数赋值给 Cluster
-set Cluster=%5
+set Cluster=%6
 
 REM 调用 Python 脚本，传递变量值
-python CreateNodeTable.py %n% %client% %server%
+python CreateNodeTable.py %n% %server1% %server2% %server3%
 
 REM 调用另一个 Python 脚本，传递 Cluster 和 startNode 变量的值
 python CreateWindows.py %Cluster% %n%
