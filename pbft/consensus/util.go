@@ -10,4 +10,3 @@ func Hash(content []byte) string {
 	h.Write(content)
 	return hex.EncodeToString(h.Sum(nil))
 }
-

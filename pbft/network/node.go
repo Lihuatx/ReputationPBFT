@@ -116,14 +116,17 @@ var PrimaryNode = map[string]string{
 	"N": "N0",
 	"M": "M0",
 	"P": "P0",
+	"J": "J0",
+	"K": "K0",
 }
 
-var Allcluster = []string{"N", "M", "P"}
+var Allcluster = []string{"N", "M", "P", "J", "K"}
 
 const ResolvingTimeDuration = time.Millisecond * 1000 // 1 second.
 var CommitteeNodeNumber = 4                           // 定义委员会节点变量
 var BaseReScore uint16 = 400
 var ReScoretThreshold uint16 = 200
+var ClusterNumber = 5
 
 func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 	const viewID = 10000000000 // temporary.
@@ -151,9 +154,6 @@ func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 		MsgBufferLock: &MsgBufferLock{},
 		ReScore:       make(map[string]map[string]uint16),
 
-		//GlobalLog: &consensus.GlobalLog{
-		//	MsgLogs: make(map[string]map[int64]*consensus.RequestMsg),
-		//},
 		GlobalBuffer: &GlobalBuffer{
 			ReqMsg:       make([]*consensus.GlobalShareMsg, 0),
 			consensusMsg: make([]*consensus.LocalMsg, 0),
@@ -184,13 +184,6 @@ func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 		node.MaliciousNode = NonMaliciousNode
 	}
 
-	//// 初始化全局消息日志
-	//for _, key := range Allcluster {
-	//	if node.GlobalLog.MsgLogs[key] == nil {
-	//		node.GlobalLog.MsgLogs[key] = make(map[int64]*consensus.RequestMsg)
-	//	}
-	//}
-
 	//初始化每个节点的分数为400分
 	for cluster, nodes := range node.NodeTable {
 		node.ReScore[cluster] = make(map[string]uint16) // 为每个集群初始化内部 map
@@ -198,13 +191,6 @@ func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 			node.ReScore[cluster][key] = BaseReScore
 		}
 	}
-
-	//// 为每个集群初始化GlobalLog
-	//for _, key := range Allcluster {
-	//	if node.GlobalLog.MsgLogs[key] == nil {
-	//		node.GlobalLog.MsgLogs[key] = make(map[int64]*consensus.RequestMsg)
-	//	}
-	//}
 
 	node.rsaPubKey = node.getPubKey(clusterName, nodeID)
 	node.rsaPrivKey = node.getPivKey(clusterName, nodeID)
@@ -314,11 +300,13 @@ func (node *Node) Broadcast(cluster string, msg interface{}, path string) map[st
 func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string) error {
 	errorMap := make(map[string]map[string]error)
 
-	for cluster, nodeMsg := range node.NodeTable {
+	for i := 0; i < ClusterNumber; i++ {
+		cluster := Allcluster[i]
 		if cluster == node.ClusterName {
 			continue
 		}
-		url := nodeMsg[PrimaryNode[cluster]]
+		primaryNodeID := PrimaryNode[cluster]
+		url := node.NodeTable[cluster][primaryNodeID]
 		jsonMsg, err := json.Marshal(msg)
 		if err != nil {
 			errorMap[cluster][PrimaryNode[cluster]] = err
@@ -326,8 +314,8 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 		}
 		fmt.Printf("GloablMsg Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
 		send(url+path, jsonMsg)
-
 	}
+
 	return nil
 }
 
@@ -341,26 +329,9 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.BatchRequestMsg, GloID
 	for i := 0; i < consensus.BatchSize; i++ {
 		node.CommittedMsgs = append(node.CommittedMsgs, ReplyMsg.Requests[i])
 	}
-	//for _, value := range node.CommittedMsgs {
-	//	//matches := re.FindString(value.Operation)
-	//	//if matches == "1" && node.ClusterName == "N" {
-	//	//fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
-	//	fmt.Printf("Committed value: %s, --end ", value.Operation)
-	//
-	//	/*else if matches == "2" && node.ClusterName == "M" {
-	//		//fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
-	//		fmt.Printf("Committed value: %s, --end ", value.Operation)
-	//	} else if matches == "3" && node.ClusterName == "P" {
-	//		fmt.Printf("Committed value: %s, %d, %s, %d--end ", value.ClientID, value.Timestamp, value.Operation, value.SequenceID)
-	//	}*/
-	//}
+
 	fmt.Print("\n\n")
-	//for _, cluster := range Allcluster {
-	//	for i := 0; i < 4; i++ {
-	//		nodeID := cluster + strconv.Itoa(i)
-	//		fmt.Printf("node %s score %d \n", nodeID, node.ReScore[cluster][nodeID])
-	//	}
-	//}
+
 	for value, _type := range node.ActiveCommitteeNode {
 		if _type == CommitteeNode {
 			fmt.Printf("node %s score %d \n", value, node.ReScore[node.ClusterName][value])
@@ -391,8 +362,6 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.BatchRequestMsg, GloID
 
 	} else if len(node.CommittedMsgs) > 3000 && node.NodeID == "N0" {
 		fmt.Printf("  Function took %s\n", duration)
-		//fmt.Printf("  Function took %s\n", duration)
-		//fmt.Printf("  Function took %s\n", duration)
 	}
 
 	//jsonMsg, err := json.Marshal(ReplyMsg)
@@ -624,41 +593,44 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 				for _, value := range scores {
 					sum += value
 				}
-				historySuccessRate = int(sum/len(node.ReElement.HistoryScore[nodeID])) * 10
+				historySuccessRate = int(sum/len(node.ReElement.HistoryScore[nodeID])) * 4
 			}
 
 			// 如果活跃度为 0 ，当前节点的此次共识结果为失败，信用值减少
 			if active == 0 {
 				fmt.Printf("节点 %s 不活跃！\n", nodeID)
 				node.ReElement.HistoryScore[nodeID] = append(node.ReElement.HistoryScore[nodeID], -1)
-				success = -30
-				active = -40
+				success = -5
+				active = -5
 			} else {
 				AddNodeNum++
+
 				node.ReElement.HistoryScore[nodeID] = append(node.ReElement.HistoryScore[nodeID], 1)
-				success = 10
+				success = 5
 				// 假设 active 和 CommitteeNodeNumber 都是 int 类型
 				activeFloat := float64(active)                     // 将 active 转换为浮点数
 				committeeFloat := float64(CommitteeNodeNumber - 1) // 将 CommitteeNodeNumber - 1 转换为浮点数
 
 				// 使用浮点数进行计算以保留小数部分
-				active = int((activeFloat / committeeFloat) * 20) // 最后将结果转换回 int 类型
+				active = int((activeFloat / committeeFloat) * 5) // 最后将结果转换回 int 类型
 
 			}
 			CurrentScore := int(node.ReScore[node.ClusterName][nodeID])
 			//fmt.Printf("Node %s Acitve %d Success %d historySuccessRate %d\n", nodeID, active, success, historySuccessRate)
 			node.ReScore[node.ClusterName][nodeID] = uint16(min(1000, max(0, CurrentScore+active+success+historySuccessRate)))
 			sumOfAddScore += active + success + historySuccessRate
+
 		}
 		//主节点的更新分数为所有更增加分数的平均值+10
-		primaryAddScore := uint16(sumOfAddScore/AddNodeNum + 10)
+		primaryAddScore := uint16(sumOfAddScore/AddNodeNum + 3)
 		node.ReScore[node.ClusterName][node.View.Primary] = uint16(min(1000, node.ReScore[node.ClusterName][node.View.Primary]+primaryAddScore))
-
 		// 每一轮的活跃值要清空
 		node.ReElement.Active = make(map[string]int)
-		if node.ClusterName == "N" && node.NodeID == node.View.Primary {
-			node.appendScoresToFile("scores.txt")
-		}
+
+		//// 记录信用分值的记得删除
+		//if node.ClusterName == "N" && node.NodeID == node.View.Primary {
+		//	node.appendScoresToFile("scores.txt")
+		//}
 		LogStage("Commit", true)
 		fmt.Printf("ViewID :%d 达成本地共识，存入待执行缓存池\n", node.View.ID)
 
@@ -684,7 +656,7 @@ var waitToSendPendingMsgsIndex = -1
 
 func (node *Node) PrimaryNodeShareMsg() error {
 	// 判断当前节点是代理执行节点，且有要共享的本地共识
-	if Allcluster[node.GlobalViewID%int64(len(Allcluster))] == node.ClusterName && len(node.MsgBuffer.PendingMsgs) > 0 && node.MsgBuffer.PendingMsgs[len(node.MsgBuffer.PendingMsgs)-1].Send == false { // 如果轮询到本地主节点作为代理人，发送消息给全局和本地
+	if Allcluster[node.GlobalViewID%int64(ClusterNumber)] == node.ClusterName && len(node.MsgBuffer.PendingMsgs) > 0 && node.MsgBuffer.PendingMsgs[len(node.MsgBuffer.PendingMsgs)-1].Send == false { // 如果轮询到本地主节点作为代理人，发送消息给全局和本地
 
 		index := waitToSendPendingMsgsIndex
 		waitToSendPendingMsgsIndex++
@@ -788,7 +760,7 @@ func (node *Node) PrimaryNodeShareMsg() error {
 		//最后检查缓存中有没有收到其他代理主节点的消息，执行
 		if len(node.GlobalBuffer.ReqMsg) != 0 {
 			tempmsg := node.GlobalBuffer.ReqMsg[0]
-			if Allcluster[node.GlobalViewID%int64(len(Allcluster))] == tempmsg.Cluster && tempmsg.ViewID == node.GlobalViewID {
+			if Allcluster[node.GlobalViewID%int64(ClusterNumber)] == tempmsg.Cluster && tempmsg.ViewID == node.GlobalViewID {
 				node.GlobalBuffer.ReqMsg = node.GlobalBuffer.ReqMsg[1:]
 				node.ShareGlobalMsgToLocal(tempmsg)
 			}
@@ -1108,7 +1080,43 @@ func (node *Node) resolveMsg() {
 			node.MsgBuffer.PrepareMsgs = newPrepareMsgs
 			node.MsgBufferLock.PrepareMsgsLock.Unlock()
 		case len(node.MsgBuffer.CommitMsgs) > 0 && (node.CurrentState.CurrentStage == consensus.Prepared):
+			if len(node.MsgBuffer.PrepareMsgs) > 0 && node.NodeID == node.View.Primary && node.MsgBuffer.PrepareMsgs[0].ViewID == node.View.ID {
+				node.MsgBufferLock.PrepareMsgsLock.Lock()
+				var keepIndexes []int    // 用于存储需要保留的元素的索引
+				var processIndexes []int //存储需要处理的元素索引
+				// 首先遍历PrepareMsgs，确定哪些元素需要保留，哪个元素需要处理
+				for index, value := range node.MsgBuffer.PrepareMsgs {
+					if value.ViewID < node.View.ID {
+						// 不需要做任何事，因为这个元素将被删除
+					} else if value.ViewID > node.View.ID {
+						keepIndexes = append(keepIndexes, index) // 保留这个元素
+					} else {
+						processIndexes = append(processIndexes, index)
+					}
+				}
+				// 如果找到了符合条件的元素，则处理它
+				if len(processIndexes) != 0 {
+					var ProcessPrepareMsgs []*consensus.VoteMsg // 假设YourMsgType是PrepareMsgs中元素的类型
+					for _, index := range processIndexes {
+						ProcessPrepareMsgs = append(ProcessPrepareMsgs, node.MsgBuffer.PrepareMsgs[index])
+					}
+					errs := node.resolvePrepareMsg(ProcessPrepareMsgs)
+					// 将这个元素标记为已处理，不再保留
+					if errs != nil {
+						fmt.Println(errs)
+						// TODO: send err to ErrorChannel
+					}
+				}
+				// 创建一个新的切片来存储保留的元素
+				var newPrepareMsgs []*consensus.VoteMsg // 假设YourMsgType是PrepareMsgs中元素的类型
+				for _, index := range keepIndexes {
+					newPrepareMsgs = append(newPrepareMsgs, node.MsgBuffer.PrepareMsgs[index])
+				}
 
+				// 更新原来的PrepareMsgs为只包含保留元素的新切片
+				node.MsgBuffer.PrepareMsgs = newPrepareMsgs
+				node.MsgBufferLock.PrepareMsgsLock.Unlock()
+			}
 			node.MsgBufferLock.CommitMsgsLock.Lock()
 			var keepIndexes []int    // 用于存储需要保留的元素的索引
 			var processIndexes []int //存储需要处理的元素索引
@@ -1309,8 +1317,8 @@ func (node *Node) ShareGlobalMsgToLocal(reqMsg *consensus.GlobalShareMsg) error 
 		return nil
 	}
 
-	if Allcluster[node.GlobalViewID%int64(len(Allcluster))] != reqMsg.Cluster {
-		fmt.Printf("收到 %s %d 主节点的共识消息，但此时的代理节点为 %s ，需要等待······\n", reqMsg.Cluster, reqMsg.ViewID, Allcluster[node.GlobalViewID%int64(len(Allcluster))])
+	if Allcluster[node.GlobalViewID%int64(ClusterNumber)] != reqMsg.Cluster {
+		fmt.Printf("收到 %s %d 主节点的共识消息，但此时的代理节点为 %s ，需要等待······\n", reqMsg.Cluster, reqMsg.ViewID, Allcluster[node.GlobalViewID%int64(ClusterNumber)])
 		node.GlobalBuffer.ReqMsg = append(node.GlobalBuffer.ReqMsg, reqMsg)
 		if node.NodeID == node.View.Primary && node.CurrentState.CurrentStage == consensus.Committed {
 			// 检查是否需要执行共识消息的代理节点为本节点

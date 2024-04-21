@@ -26,13 +26,17 @@ set server2=%4
 
 set server3=%5
 
+set server4=%6
+
+set server5=%7
+
 REM 第五个参数赋值给 Cluster
-set Cluster=%6
+set Cluster=%8
 
 REM 调用 Python 脚本，传递变量值
-python CreateNodeTable.py %n% %server1% %server2% %server3%
+python CreateNodeTable.py %n% %server1% %server2% %server3% %server4% %server5%
 
 REM 调用另一个 Python 脚本，传递 Cluster 和 startNode 变量的值
-python CreateWindows.py %Cluster% %n%
+python CreateWindows.py %Cluster% %n% %z%
 
 pause
