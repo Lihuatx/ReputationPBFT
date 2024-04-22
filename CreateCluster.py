@@ -16,13 +16,13 @@ def run_commands(arg):
     print("Starting commands...")
 
     # 执行 go build 命令
-    print("Building Go application...")
-    subprocess.run(['go', 'build', '-o', 'app'])
+    #print("Building Go application...")
+    #subprocess.run(['go', 'build', '-o', 'app'])
 
     # 等待一段时间以确保编译完成
     print("Waiting for build to finish...")
     print("Create %s cluster" % arg)
-    time.sleep(1)
+    #time.sleep(1)
 
     subprocess.run(['tmux', 'new-session', '-d', '-s', 'myPBFT'])
 
