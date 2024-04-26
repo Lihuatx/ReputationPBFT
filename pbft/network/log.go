@@ -12,7 +12,7 @@ func LogMsg(msg interface{}) {
 		fmt.Printf("[REQUEST] ClientID: %s, Timestamp: %d, Operation: %s\n", reqMsg.ClientID, reqMsg.Timestamp, reqMsg.Operation)
 	case *consensus.BatchRequestMsg:
 		reqMsg := msg.(*consensus.BatchRequestMsg)
-		fmt.Printf("[REQUEST] ClientID: %s, Timestamp: %d,SeqID %d\n", reqMsg.ClientID, reqMsg.Timestamp, reqMsg.Requests[0].SequenceID)
+		fmt.Printf("[REQUEST] ClientID: %s, Timestamp: %d,Operation %s\n", reqMsg.ClientID, reqMsg.Timestamp, reqMsg.Requests[0].Operation)
 	case *consensus.PrePrepareMsg:
 		prePrepareMsg := msg.(*consensus.PrePrepareMsg)
 		fmt.Printf("[PREPREPARE] ClientID: %s,  SequenceID: %d\n", prePrepareMsg.RequestMsg.ClientID, prePrepareMsg.SequenceID)

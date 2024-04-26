@@ -33,6 +33,7 @@ const (
 	Committed                // Same with `committed-local` stage explained in the original paper.
 
 	GetRequest
+	ViewChange
 )
 
 // f: # of Byzantine faulty node
@@ -59,7 +60,6 @@ func CreateState(viewID int64, lastSequenceID int64) *State {
 func (state *State) StartConsensus(request *BatchRequestMsg) (*PrePrepareMsg, error) {
 	// `sequenceID` will be the index of this message.
 	sequenceID := time.Now().UnixNano()
-	// fmt.Printf("test import where")
 	// Find the unique and largest number for the sequence ID
 	if state.LastSequenceID != -1 {
 		for state.LastSequenceID >= sequenceID {
@@ -88,7 +88,7 @@ func (state *State) StartConsensus(request *BatchRequestMsg) (*PrePrepareMsg, er
 
 	return &PrePrepareMsg{
 		ViewID:     state.ViewID,
-		SequenceID: sequenceID,
+		SequenceID: request.SequenceID,
 		Digest:     digest,
 		RequestMsg: request,
 	}, nil
@@ -227,6 +227,16 @@ func (state *State) committed() bool {
 	}
 
 	return true
+}
+
+func GetDigest(object interface{}) (string, error) {
+	msg, err := json.Marshal(object)
+
+	if err != nil {
+		return "", err
+	}
+
+	return Hash(msg), nil
 }
 
 func digest(object interface{}) (string, error) {

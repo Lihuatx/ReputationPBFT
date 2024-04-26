@@ -14,8 +14,12 @@ server2=$4
 
 server3=$5
 
+server4=$6
+
+server5=$7
+
 # 第五个参数赋值给 Cluster
-Cluster=$6
+Cluster=$8
 
 # 调用 Python 脚本，传递变量值
 python3 CreateNodeTable.py "$n" "$server1" "$server2" "$server3"
@@ -24,6 +28,6 @@ python3 CreateNodeTable.py "$n" "$server1" "$server2" "$server3"
 tmux kill-session -t myPBFT
 
 # 调用另一个 Python 脚本，传递 Cluster 变量的值
-python3 CreateCluster.py "$Cluster" "$n"
+python3 CreateCluster.py "$Cluster" "$n" "$z"
 
 python3 linuxTest.py "$Cluster"

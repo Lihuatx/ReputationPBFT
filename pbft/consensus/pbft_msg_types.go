@@ -29,7 +29,7 @@ type PrePrepareMsg struct {
 	Digest     string           `json:"digest"`
 	NodeID     string           `json:"nodeID"` //添加nodeID
 	RequestMsg *BatchRequestMsg `json:"requestMsg"`
-	Sign       []byte           `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+	Sign       []byte           `json:"sign"`
 }
 
 type VoteMsg struct {
@@ -38,8 +38,32 @@ type VoteMsg struct {
 	Digest     string `json:"digest"`
 	NodeID     string `json:"nodeID"`
 	MsgType    `json:"msgType"`
-	Sign       []byte          `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+	Sign       []byte          `json:"sign"`
 	Score      map[string]bool `json:"score"`
+}
+
+type ViewChangeMsg struct {
+	NewViewNumber    int64  `json:"NewViewNumber"`
+	NewPrimaryNodeID string `json:"NewPrimaryNodeID"`
+	LastViewID       int64  `json:"LastViewID"`
+	LastPendingMsg   string `json:"digest"`
+	NodeID           string `json:"nodeID"`
+	Sign             []byte `json:"sign"`
+}
+
+type NewView struct {
+	VoteNodeMsg   map[string][]byte `json:"NodeSignInfo"`
+	NewViewNumber int64             `json:"NewViewNumber"`
+	NodeID        string            `json:"nodeID"`
+	Cluster       string            `json:"ClusterName"`
+	Digest        string            `json:"digest"`
+	Sign          []byte            `json:"sign"`
+}
+
+type SyncReScore struct {
+	Score  map[string]uint16 `json:"score"`
+	NodeID string            `json:"nodeID"`
+	Sign   []byte            `json:"sign"`
 }
 
 type GlobalShareMsg struct {
@@ -47,9 +71,10 @@ type GlobalShareMsg struct {
 	NodeID                string            `json:"nodeID"`
 	RequestMsg            *BatchRequestMsg  `json:"requestMsg"`
 	Digest                string            `json:"digest"`
-	Sign                  []byte            `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+	Sign                  []byte            `json:"sign"`
 	ViewID                int64             `json:"viewID"`
 	Score                 map[string]uint16 `json:"score"`
+	SignInfo              map[string][]byte `json:"SignInfo"`              //集群内部节点对该消息的签名
 	AddNewCommitteeNodeID []string          `json:"AddNewCommitteeNodeID"` // 用于替换信用值不够的节点
 }
 
@@ -57,7 +82,7 @@ type GlobalShareMsg struct {
 type LocalMsg struct {
 	GlobalShareMsg *GlobalShareMsg `json:"globalShareMsg"`
 	NodeID         string          `json:"nodeID"`
-	Sign           []byte          `json:"sign"` // 如果你想在 JSON 中包含 Sign 字段
+	Sign           []byte          `json:"sign"`
 }
 
 type MsgType int
@@ -67,6 +92,6 @@ const (
 	CommitMsg
 )
 
-const BatchSize = 100
+const BatchSize = 1
 
 var GlobalViewID int

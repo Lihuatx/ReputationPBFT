@@ -32,18 +32,27 @@ func main() {
 
 	nodeID := os.Args[1]
 	clusterName := os.Args[2]
-	network.ClusterNumber, _ = strconv.Atoi(os.Args[3])
 
-	// 设置默认值
-	isMaliciousNode := "no" // 假设默认情况下节点不是恶意的
+	sendMsgNumber := 5
+	if nodeID == "client" {
+		client := network.ClientStart(clusterName)
 
-	// 检查是否提供了第三个参数
-	if len(os.Args) > 4 { // 判断节点是正常节点还是恶意节点
-		isMaliciousNode = os.Args[4] // 使用提供的第三个参数
+		go client.SendMsg(sendMsgNumber)
+
+		client.Start()
+	} else {
+		network.ClusterNumber, _ = strconv.Atoi(os.Args[3])
+
+		// 设置默认值
+		isMaliciousNode := "no" // 假设默认情况下节点不是恶意的
+
+		// 检查是否提供了第三个参数
+		if len(os.Args) > 4 { // 判断节点是正常节点还是恶意节点
+			isMaliciousNode = os.Args[4] // 使用提供的第三个参数
+		}
+
+		server := network.NewServer(nodeID, clusterName, isMaliciousNode)
+
+		server.Start()
 	}
-
-	server := network.NewServer(nodeID, clusterName, isMaliciousNode)
-
-	server.Start()
-
 }
