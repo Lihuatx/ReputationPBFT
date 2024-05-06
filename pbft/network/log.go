@@ -1,8 +1,8 @@
 package network
 
 import (
+	"My_PBFT/pbft/consensus"
 	"fmt"
-	"simple_pbft/pbft/consensus"
 )
 
 func LogMsg(msg interface{}) {
@@ -15,7 +15,7 @@ func LogMsg(msg interface{}) {
 		fmt.Printf("[REQUEST] ClientID: %s, Timestamp: %d,Operation %s\n", reqMsg.ClientID, reqMsg.Timestamp, reqMsg.Requests[0].Operation)
 	case *consensus.PrePrepareMsg:
 		prePrepareMsg := msg.(*consensus.PrePrepareMsg)
-		fmt.Printf("[PREPREPARE] ClientID: %s,  SequenceID: %d\n", prePrepareMsg.RequestMsg.ClientID, prePrepareMsg.SequenceID)
+		fmt.Printf("[PREPREPARE] ClientID: %s,  SequenceID: %d,Operation %s\n", prePrepareMsg.RequestMsg.ClientID, prePrepareMsg.SequenceID, prePrepareMsg.RequestMsg.Requests[0].Operation)
 	case *consensus.VoteMsg:
 		voteMsg := msg.(*consensus.VoteMsg)
 		if voteMsg.MsgType == consensus.PrepareMsg {

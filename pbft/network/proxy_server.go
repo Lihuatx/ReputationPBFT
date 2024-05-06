@@ -1,12 +1,12 @@
 package network
 
 import (
+	"My_PBFT/pbft/consensus"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"simple_pbft/pbft/consensus"
 	"time"
 )
 
@@ -44,10 +44,10 @@ func (server *Server) setRoute() {
 	http.HandleFunc("/SyncScore", server.getScore)
 	http.HandleFunc("/reply", server.getReply)
 	//接受全局共识消息
+	http.HandleFunc("/ShareGlobalNewViewMsgToLocalNode", server.getGlobalNewViewMsgFromPrimary)
+	http.HandleFunc("/NewViewToGlobal", server.getGlobalNewView)
 	http.HandleFunc("/global", server.getGlobal)
 	http.HandleFunc("/GlobalToLocal", server.getGlobalToLocal)
-	http.HandleFunc("/NewViewToGlobal", server.getGlobalNewView)
-	http.HandleFunc("/ShareGlobalNewViewMsgToLocalNode", server.getGlobalNewViewMsgFromPrimary)
 
 	//飞线
 	http.HandleFunc("/reqToLocal", server.getReqToLocal)

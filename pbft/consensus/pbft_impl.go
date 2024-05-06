@@ -77,7 +77,7 @@ func (state *State) StartConsensus(request *BatchRequestMsg) (*PrePrepareMsg, er
 	state.MsgLogs.ReqMsg = request
 
 	// Get the digest of the request message
-	digest, err := digest(request)
+	_digest, err := digest(request)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -89,7 +89,7 @@ func (state *State) StartConsensus(request *BatchRequestMsg) (*PrePrepareMsg, er
 	return &PrePrepareMsg{
 		ViewID:     state.ViewID,
 		SequenceID: request.SequenceID,
-		Digest:     digest,
+		Digest:     _digest,
 		RequestMsg: request,
 	}, nil
 }
@@ -210,7 +210,7 @@ func (state *State) prepared() bool {
 		return false
 	}
 
-	if len(state.MsgLogs.PrepareMsgs) < 2*F-1 {
+	if len(state.MsgLogs.PrepareMsgs) < 2*F {
 		return false
 	}
 

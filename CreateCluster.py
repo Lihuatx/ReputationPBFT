@@ -38,7 +38,7 @@ def run_commands(arg):
         subprocess.run(['tmux', 'new-window', '-t', f'myPBFT:{index + 1}', '-n', window_name])
         time.sleep(0.1)
 
-        tmux_command = f"tmux send-keys -t myPBFT:{index + 1} '{exe} {arg1} {arg2} {z}' C-m"
+        tmux_command = f"tmux send-keys -t myPBFT:{index + 1} '{exe} {arg1} {arg2} {z} {nodes_per_group}' C-m"
         subprocess.run(['bash', '-c', tmux_command])
     # 启动客户端
     time.sleep(1)

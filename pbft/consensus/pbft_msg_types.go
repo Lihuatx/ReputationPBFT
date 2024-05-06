@@ -12,7 +12,6 @@ type BatchRequestMsg struct {
 	Timestamp  int64                  `json:"timestamp"`
 	ClientID   string                 `json:"clientID"`
 	SequenceID int64                  `json:"sequenceID"`
-	Send       bool                   `json:"Send"`
 }
 
 type ReplyMsg struct {
@@ -58,12 +57,14 @@ type NewView struct {
 	Cluster       string            `json:"ClusterName"`
 	Digest        string            `json:"digest"`
 	Sign          []byte            `json:"sign"`
+	ViewID        int64             `json:"ViewID"`
 }
 
 type SyncReScore struct {
 	Score  map[string]uint16 `json:"score"`
 	NodeID string            `json:"nodeID"`
 	Sign   []byte            `json:"sign"`
+	ViewID int64             `json:"ViewID"` // 这个viewID用于判断同步和主节点之间的信用值分数值
 }
 
 type GlobalShareMsg struct {
@@ -80,9 +81,10 @@ type GlobalShareMsg struct {
 
 // 在这里LocalMsg是上层主节点委员会中的消息
 type LocalMsg struct {
-	GlobalShareMsg *GlobalShareMsg `json:"globalShareMsg"`
-	NodeID         string          `json:"nodeID"`
-	Sign           []byte          `json:"sign"`
+	GlobalShareMsg             *GlobalShareMsg `json:"globalShareMsg"`
+	NodeID                     string          `json:"nodeID"`
+	Sign                       []byte          `json:"sign"`
+	WaitToSendPendingMsgsIndex int             `json:"waitToSendPendingMsgsIndex"`
 }
 
 type MsgType int

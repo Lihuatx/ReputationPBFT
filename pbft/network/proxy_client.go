@@ -1,10 +1,10 @@
 package network
 
 import (
+	"My_PBFT/pbft/consensus"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"simple_pbft/pbft/consensus"
 )
 
 func ClientStart(name string) *Client {

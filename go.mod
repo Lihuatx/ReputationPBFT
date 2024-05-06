@@ -1,4 +1,5 @@
-module simple_pbft
+//module simple_pbft
+module My_PBFT
 
 go 1.21.1
 

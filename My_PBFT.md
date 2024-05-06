@@ -118,3 +118,7 @@ node.go 的 getCommit中使用了CommitteeNodeNumber，后期要将其换为活�
 这些内容后面要同步到另外两个项目中。
 
 今天需要新增功能：viewchange和主节点轮询，为每个执行的request加上一个timer
+
+#### [2024-4-28]
+为每个 goroutine 加上一个		time.Sleep(50 * time.Microsecond) 以减少CPU占用
+

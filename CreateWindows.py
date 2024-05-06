@@ -1,6 +1,8 @@
 import subprocess
 import time
 import sys
+import threading
+
 
 # 定义命令模板和数量
 command_template = 'app.exe'
@@ -20,18 +22,23 @@ for exe, arg1, arg2 in commands:
     if i > z * nodes_per_group:
         break
     # 如果 app.exe 路径中包含空格，确保使用引号括起来
-    command = f'start cmd /k "{exe}" {arg1} {arg2} {z}'
+    command = f'start cmd /k "{exe}" {arg1} {arg2} {z} {nodes_per_group}'
     subprocess.Popen(command, shell=True)
 
 time.sleep(1)
 
-i = 0
-for arg in groups:
-    i+=1
-    if i > z:
-        break
+def start_command(arg):
     command = f'start cmd /k "{command_template}" client {arg}'
     subprocess.Popen(command, shell=True)
+
+i = 0
+for arg in groups:
+    i += 1
+    if i > z:
+        break
+    # 创建并启动线程
+    thread = threading.Thread(target=start_command, args=(arg,))
+    thread.start()
 
 
 
