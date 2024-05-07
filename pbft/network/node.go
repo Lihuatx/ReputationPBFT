@@ -392,9 +392,9 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.BatchRequestMsg, GloID
 		node.CommittedMsgs = append(node.CommittedMsgs, ReplyMsg.Requests[i])
 
 	}
-	for _, value := range node.CommittedMsgs {
-		fmt.Printf("Commited Msg:%v  ", value.Operation)
-	}
+	//for _, value := range node.CommittedMsgs {
+	//	fmt.Printf("Commited Msg:%v  ", value.Operation)
+	//}
 	fmt.Print("\n\n")
 
 	for value, _type := range node.ActiveCommitteeNode {
@@ -433,7 +433,7 @@ func (node *Node) Reply(ViewID int64, ReplyMsg *consensus.BatchRequestMsg, GloID
 				// 系统中没有设置用户，reply消息直接发送给主节点
 				url := ClientURL[node.ClusterName] + "/reply"
 				send(url, jsonMsg)
-				fmt.Printf("\n\nReply to Client!\n\n\n")
+				//fmt.Printf("\n\nReply to Client!\n\n\n")
 			}
 		}()
 	}
@@ -894,9 +894,9 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 			node.ReElement.Active = make(map[string]int)
 
 			//// 记录信用分值的记得删除
-			if node.ClusterName == "N" && node.NodeID == node.View.Primary {
-				node.appendScoresToFile("scores.txt")
-			}
+			//if node.ClusterName == "N" && node.NodeID == node.View.Primary {
+			//	node.appendScoresToFile("scores.txt")
+			//}
 		}
 
 		LogStage("Commit", true)

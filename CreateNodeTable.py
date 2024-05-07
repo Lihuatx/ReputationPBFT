@@ -56,14 +56,14 @@ with open('nodetable.txt', 'w') as file:
                 if node_id == "P0":
                     print(address)
 
-    for cluster, nodes in node_table_P.items():
+    for cluster, nodes in node_table_J.items():
         if cluster == "J":
             for node_id, address in nodes.items():
                 file.write(f"{cluster} {node_id} {address}\n")
                 if node_id == "J0":
                     print(address)
 
-    for cluster, nodes in node_table_P.items():
+    for cluster, nodes in node_table_K.items():
         if cluster == "K":
             for node_id, address in nodes.items():
                 file.write(f"{cluster} {node_id} {address}\n")
