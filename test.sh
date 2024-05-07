@@ -22,7 +22,7 @@ server5=$7
 Cluster=$8
 
 # 调用 Python 脚本，传递变量值
-python3 CreateNodeTable.py "$n" "$server1" "$server2" "$server3"
+python3 CreateNodeTable.py "$n" "$server1" "$server2" "$server3" "$server4" "$server5"
 
 # 关闭名为 myPBFT 的 tmux 会话
 tmux kill-session -t myPBFT
@@ -30,4 +30,4 @@ tmux kill-session -t myPBFT
 # 调用另一个 Python 脚本，传递 Cluster 变量的值
 python3 CreateCluster.py "$Cluster" "$n" "$z"
 
-#python3 linuxTest.py "$Cluster"
+python3 linuxTest.py "$Cluster"

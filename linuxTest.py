@@ -12,7 +12,7 @@ def close_socket(client_socket):
 
 def extract_port():
     # 初始化端口变量
-    PortN, PortM, PortP = None, None, None
+    PortN, PortM, PortP, PortJ, PortK = None, None, None, None, None
 
     # 打开并读取文件
     with open('nodetable.txt', 'r') as file:
@@ -30,18 +30,30 @@ def extract_port():
                     PortM = port
                 elif node_id == "P0":
                     PortP = port
+                elif node_id == "J0":
+                    PortM = port
+                elif node_id == "K0":
+                    PortP = port
 
     # 打印获取到的端口
     print(f"PortN: {PortN}")
     print(f"PortM: {PortM}")
     print(f"PortP: {PortP}")
+    print(f"PortJ: {PortJ}")
+    print(f"PortK: {PortK}")
 
     # 返回端口信息，以便在其他地方使用
-    return PortN, PortM, PortP
+    return PortN, PortM, PortP, PortJ, PortK
 
-PortN, PortM, PortP = extract_port()
+PortN, PortM, PortP, PortJ, PortK = extract_port()
 
 if arg == "N":
+    subprocess.run(['tmux', 'kill-session', '-t', 'myClient'])
+    subprocess.run(['tmux', 'new-session', '-d', '-s', 'myClient'])
+
+    command = f"./app client N"
+    subprocess.run(['tmux', 'new-window', '-t', f'myClient:{1}', '-n', "Client-1"])
+
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect(('49.51.228.140', 2000))
     message = "link"
@@ -51,12 +63,17 @@ if arg == "N":
     message = "link"
     client_socket_2.sendall(message.encode())
 
-    for i in range(1000):
-        curl_command = f"""
-            curl -X POST "http://127.0.0.01:{PortN}/req" -H "Content-Type: application/json" -d '{{"clientID":"ahnhwi - {i}","operation":"SendMes1 - {i}","timestamp":{i}}}'
-            """
-        subprocess.Popen(['bash', '-c', curl_command])
+    tmux_command = f"tmux send-keys -t myClient:{1} './app client N' C-m"
+
+    subprocess.Popen(['bash', '-c', tmux_command])
+
 else:
+    subprocess.run(['tmux', 'kill-session', '-t', 'myClient'])
+    subprocess.run(['tmux', 'new-session', '-d', '-s', 'myClient'])
+
+    command = f"./app client N"
+    subprocess.run(['tmux', 'new-window', '-t', f'myClient:{1}', '-n', "Client-1"])
+
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('0.0.0.0', 2000))
     server_socket.listen(1)
@@ -68,35 +85,7 @@ else:
 
     close_thread = threading.Thread(target=close_socket, args=(client_socket,))
     close_thread.start()
-    if arg == "M":
-        for i in range(1000):
-            curl_command = f"""
-                curl -X POST "http://127.0.0.01:{PortM}/req" -H "Content-Type: application/json" -d '{{"clientID":"ahnhwi - {i}","operation":"SendMes1 - {i}","timestamp":{i}}}'
-                """
-            subprocess.Popen(['bash', '-c', curl_command])
-    else:
-        for i in range(1000):
-            curl_command = f"""
-                curl -X POST "http://127.0.0.01:{PortP}/req" -H "Content-Type: application/json" -d '{{"clientID":"ahnhwi - {i}","operation":"SendMes1 - {i}","timestamp":{i}}}'
-                """
-            subprocess.Popen(['bash', '-c', curl_command])
+    tmux_command = f"tmux send-keys -t myClient:{1} './app client {arg}' C-m"
 
-# cnt = 0
-# for i in range(40):
-#     cnt += 1
-#     curl_command = f"""
-#         curl -X POST "http://127.0.0.01:1110/req" -H "Content-Type: application/json" -d '{{"clientID":"ahnhwi - {i}","operation":"SendMes1 - {i}","timestamp":{i}}}'
-#         """
-#     curl_command2 = f"""
-#         curl -X POST "http://43.132.214.22:1114/req" -H "Content-Type: application/json" -d '{{"clientID":"ahnhwi - {i}","operation":"SendMes2 - {i}","timestamp":{i}}}'
-#         """
-#     curl_command3 = f"""
-#         curl -X POST "http://49.51.228.140:1118/req" -H "Content-Type: application/json" -d '{{"clientID":"ahnhwi - {i}","operation":"SendMes3 - {i}","timestamp":{i}}}'
-#         """
-#     subprocess.Popen(['bash', '-c', curl_command3])
-#     subprocess.Popen(['bash', '-c', curl_command2])
-#     subprocess.Popen(['bash', '-c', curl_command])
-#
-#     if cnt % 20 == 0:
-#         # time.sleep(1)  # 如果需要，取消注释此行以使用 sleep
-#         pass
+    subprocess.Popen(['bash', '-c', tmux_command])
+
