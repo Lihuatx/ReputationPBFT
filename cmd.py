@@ -10,7 +10,7 @@ clusters = ['N', 'M', 'P', 'J', 'K']
 cmd_head = "./test.sh "
 #cluster_num = "4 "
 #node_num = "5 "
-base_server_ips = ["server1", "server2", "server3", "server4", "server5"]
+base_server_ips = ["119.28.135.250", "150.109.254.120", "124.156.223.221", "43.156.31.64", "43.133.121.124"]
 
 # 遍历每个集群模式生成并执行命令
 for i, mode in enumerate(clusters):
