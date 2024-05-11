@@ -35,13 +35,6 @@ def extract_port():
                 elif node_id == "K0":
                     PortP = port
 
-    # 打印获取到的端口
-    print(f"PortN: {PortN}")
-    print(f"PortM: {PortM}")
-    print(f"PortP: {PortP}")
-    print(f"PortJ: {PortJ}")
-    print(f"PortK: {PortK}")
-
     # 返回端口信息，以便在其他地方使用
     return PortN, PortM, PortP, PortJ, PortK
 

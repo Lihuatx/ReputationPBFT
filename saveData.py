@@ -19,7 +19,7 @@ def monitor_file():
     # 读取 duration 并处理
     with open(file_name, 'r') as file:
         duration = file.read()
-        print(f"Duration found: {duration}")
+        # print(f"Duration found: {duration}")
 
         # 检查 data.xls 文件是否存在，不存在则创建
         if not exists(xls_file):
@@ -36,6 +36,8 @@ def monitor_file():
             xls.write(f"{duration}\n")
 
         print(f"Duration {duration} added to {xls_file} as entry number {count + 1}")
+
+    return count
 
 if __name__ == "__main__":
     monitor_file()

@@ -39,33 +39,33 @@ with open('nodetable.txt', 'w') as file:
         if cluster == "N":
             for node_id, address in nodes.items():
                 file.write(f"{cluster} {node_id} {address}\n")
-                if node_id == "N0":
-                    print(address)
+                # if node_id == "N0":
+                #     print(address)
 
     for cluster, nodes in node_table_M.items():
         if cluster == "M":
             for node_id, address in nodes.items():
                 file.write(f"{cluster} {node_id} {address}\n")
-                if node_id == "M0":
-                    print(address)
+                # if node_id == "M0":
+                #     print(address)
 
     for cluster, nodes in node_table_P.items():
         if cluster == "P":
             for node_id, address in nodes.items():
                 file.write(f"{cluster} {node_id} {address}\n")
-                if node_id == "P0":
-                    print(address)
+                # if node_id == "P0":
+                #     print(address)
 
     for cluster, nodes in node_table_J.items():
         if cluster == "J":
             for node_id, address in nodes.items():
                 file.write(f"{cluster} {node_id} {address}\n")
-                if node_id == "J0":
-                    print(address)
+                # if node_id == "J0":
+                #     print(address)
 
     for cluster, nodes in node_table_K.items():
         if cluster == "K":
             for node_id, address in nodes.items():
                 file.write(f"{cluster} {node_id} {address}\n")
-                if node_id == "K0":
-                    print(address)
+                # if node_id == "K0":
+                #     print(address)

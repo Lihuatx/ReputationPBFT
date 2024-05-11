@@ -73,7 +73,8 @@ func (client *Client) SendMsg(sendMsgNumber int) error {
 
 func (client *Client) GetReply(msg consensus.ReplyMsg) {
 	duration := time.Since(client.msgTimeLog[msg.Timestamp].startTime)
-	if client.msgTimeLog[msg.Timestamp].msg.Operation == "Client-N499" {
+	if client.msgTimeLog[msg.Timestamp].msg.Operation == "msg: Client-N499" {
+		fmt.Println("save Time!!!")
 		// 创建文件并写入 duration
 		file, err := os.Create("costTime.txt")
 		if err != nil {
@@ -86,6 +87,7 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 		if err != nil {
 			log.Fatal("Cannot write to file", err)
 		}
+
 	}
 	fmt.Printf("msg %s took %s\n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration)
 }
