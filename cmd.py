@@ -7,7 +7,7 @@ import saveData
 
 exeCluster = sys.argv[1]
 cluster_num = sys.argv[3] + " "
-node_numList = ["4 ","10 "]
+node_numList = ['4', '10']
 node_num = sys.argv[2] + " "
 PrimaryClusterWaitTime = 5
 
@@ -56,7 +56,7 @@ def startCmd():
 
 if __name__ == "__main__":
     for i in node_num:
-        node_num = node_numList[i]
+        node_num = node_numList[i] + " "
         BatchTest()
 
 
