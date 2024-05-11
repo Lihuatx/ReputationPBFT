@@ -55,6 +55,7 @@ def startCmd():
             subprocess.run(cmd, shell=True)
 
 if __name__ == "__main__":
+    global node_num
     for i in node_num:
         node_num = i
         BatchTest()
