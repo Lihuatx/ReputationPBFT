@@ -21,10 +21,7 @@ def monitor_file():
         duration = file.read()
         # print(f"Duration found: {duration}")
 
-        # 检查 data.xls 文件是否存在，不存在则创建
-        if not exists(xls_file):
-            with open(xls_file, 'w') as xls:
-                xls.write('Duration\n')
+
 
         # 读取 data.xls 以确定已有数据的数量
         with open(xls_file, 'r') as xls:
