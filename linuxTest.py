@@ -55,19 +55,19 @@ if arg == "N":
     subprocess.run(['tmux', 'new-window', '-t', f'myClient:{1}', '-n', "Client-1"])
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(('43.131.243.92', 2000))
+    client_socket.connect(('150.109.254.120', 2000))
     message = "link"
     client_socket.sendall(message.encode())
     client_socket_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket_2.connect(('43.153.169.187', 2000))
+    client_socket_2.connect(('124.156.223.221', 2000))
     message = "link"
     client_socket_2.sendall(message.encode())
     client_socket_3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket_3.connect(('43.163.2.11', 2000))
+    client_socket_3.connect(('43.156.31.64', 2000))
     message = "link"
     client_socket_3.sendall(message.encode())
     client_socket_4 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket_4.connect(('43.128.208.33', 2000))
+    client_socket_4.connect(('43.133.121.124', 2000))
     message = "link"
     client_socket_4.sendall(message.encode())
 
