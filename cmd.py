@@ -7,7 +7,7 @@ import saveData
 
 exeCluster = sys.argv[1]
 cluster_num = sys.argv[3] + " "
-node_numList = ["4 ", "10 "]
+node_numList = ["16 ", "22 ", "28 ", "34 ", "40 ", "46 "]
 PrimaryClusterWaitTime = 5
 
 # 定义集群中的不同模式以及服务器IP（可以按实际情况填入具体IP地址）
@@ -21,6 +21,9 @@ def BatchTest(node_num, cluster_num):
     # 检查 data.xls 文件是否存在，不存在则创建
     if not saveData.exists(xls_file):
         with open(xls_file, 'w') as xls:
+            xls.write(f"Duration time(N = {node_num} Z = {cluster_num})\n")
+    else:
+        with open(xls_file, 'a') as xls:
             xls.write(f"Duration time(N = {node_num} Z = {cluster_num})\n")
     while testCnt < 10:
         print(f"\n--- Test count {testCnt + 1}")
