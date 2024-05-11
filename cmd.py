@@ -2,8 +2,8 @@ import subprocess
 import sys
 
 exeCluster = sys.argv[1]
-cluster_num = sys.argv[2] + " "
-node_num = sys.argv[3] + " "
+cluster_num = sys.argv[3] + " "
+node_num = sys.argv[2] + " "
 
 # 定义集群中的不同模式以及服务器IP（可以按实际情况填入具体IP地址）
 clusters = ['N', 'M', 'P', 'J', 'K']
@@ -19,7 +19,7 @@ for i, mode in enumerate(clusters):
     # 当前模式对应的服务器IP设置为"0.0.0.0"
     server_ips[i] = "0.0.0.0"
     # 生成命令字符串
-    cmd = cmd_head + cluster_num + node_num + ' '.join(server_ips) + ' ' + mode
+    cmd = cmd_head + node_num + cluster_num + ' '.join(server_ips) + ' ' + mode
     # 打印生成的命令
     if exeCluster == clusters[i]:
         print("Executing command:", cmd)
