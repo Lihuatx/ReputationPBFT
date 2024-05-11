@@ -10,7 +10,7 @@ server3 = sys.argv[4]
 server4 = sys.argv[5]
 server5 = sys.argv[6]
 
-base_port = 1110  # 基础端口号
+base_port = 2222  # 基础端口号
 
 # 初始化 NodeTable
 node_table = {cluster: {f"{cluster}{i}": f"{server1}:{base_port + i + (clusters.index(cluster) * nodes_per_cluster)}"
