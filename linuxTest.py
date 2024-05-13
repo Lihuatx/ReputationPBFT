@@ -47,10 +47,10 @@ if arg == "N":
     command = f"./app client N"
     subprocess.run(['tmux', 'new-window', '-t', f'myClient:{1}', '-n', "Client-1"])
 
-    # client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # client_socket.connect(('43.155.176.149', 2000))
-    # message = "link"
-    # client_socket.sendall(message.encode())
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('43.155.176.149', 2000))
+    message = "link"
+    client_socket.sendall(message.encode())
     # client_socket_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # client_socket_2.connect(('43.163.234.202', 2000))
     # message = "link"
