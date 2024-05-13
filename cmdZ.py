@@ -57,6 +57,6 @@ def startCmd(node_num, cluster_num):
             subprocess.run(cmd, shell=True)
 
 if __name__ == "__main__":
-    n = node_num / int(cluster_num)
+    n = int(node_num / int(cluster_num))
     BatchTest(n, cluster_num)
 
