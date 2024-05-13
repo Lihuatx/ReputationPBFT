@@ -7,8 +7,11 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 )
+
+var lock sync.Mutex
 
 type reply struct {
 	msg       consensus.RequestMsg
@@ -65,15 +68,18 @@ func (client *Client) SendMsg(sendMsgNumber int) error {
 
 		fmt.Printf("Client Send request Size of JSON message: %d bytes\n", len(jsonMsg))
 		send(url+"/req", jsonMsg)
+		lock.Lock()
 		client.msgTimeLog[msg.Timestamp] = reply{
 			msg:       msg,
 			startTime: time.Now(),
 		}
+		lock.Unlock()
 	}
 	return nil
 }
 
 func (client *Client) GetReply(msg consensus.ReplyMsg) {
+	lock.Lock()
 	duration := time.Since(client.msgTimeLog[msg.Timestamp].startTime)
 	cmd := "msg: Client-" + client.cluster + strconv.Itoa(client.sendMsgNumber-1)
 	if client.msgTimeLog[msg.Timestamp].msg.Operation == cmd {
@@ -93,4 +99,5 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 
 	}
 	fmt.Printf("msg %s took %s\n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration)
+	lock.Unlock()
 }

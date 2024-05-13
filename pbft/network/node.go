@@ -871,7 +871,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 					historySuccessRate = sum / float32(len(node.ReElement.HistoryScore[nodeID]))
 					fmt.Printf("historySuccessRate %v\n", historySuccessRate)
 				}
-
+				historyScore := int(historySuccessRate * 4)
 				// 如果活跃度为 0 ，当前节点的此次共识结果为失败，信用值减少
 				if active == 0 {
 					fmt.Printf("节点 %s 不活跃！\n", nodeID)
@@ -889,15 +889,12 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 
 					// 使用浮点数进行计算以保留小数部分
 					active = int((activeFloat / committeeFloat) * 4) // 最后将结果转换回 int 类型
-
+					sumOfAddScore += active + success + historyScore
 				}
 				CurrentScore := int(node.ReScore[node.ClusterName][nodeID])
-				historyScore := int(historySuccessRate * 4)
 				fmt.Printf("historyScore %v\n", historyScore)
 				//fmt.Printf("Node %s Acitve %d Success %d historySuccessRate %d\n", nodeID, active, success, historySuccessRate)
 				node.ReScore[node.ClusterName][nodeID] = uint16(min(1000, max(0, CurrentScore+active+success+historyScore)))
-				sumOfAddScore += active + success + historyScore
-
 			}
 			//主节点的更新分数为所有更增加分数的平均值+10
 			primaryAddScore := uint16(sumOfAddScore/AddNodeNum + 2)
