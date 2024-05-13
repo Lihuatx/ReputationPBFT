@@ -51,18 +51,18 @@ if arg == "N":
     client_socket.connect(('43.155.176.149', 2000))
     message = "link"
     client_socket.sendall(message.encode())
-    # client_socket_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # client_socket_2.connect(('43.163.234.202', 2000))
-    # message = "link"
-    # client_socket_2.sendall(message.encode())
-    # client_socket_3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # client_socket_3.connect(('43.134.41.237', 2000))
-    # message = "link"
-    # client_socket_3.sendall(message.encode())
-    # client_socket_4 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # client_socket_4.connect(('43.128.207.195', 2000))
-    # message = "link"
-    # client_socket_4.sendall(message.encode())
+    client_socket_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket_2.connect(('43.163.234.202', 2000))
+    message = "link"
+    client_socket_2.sendall(message.encode())
+    client_socket_3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket_3.connect(('43.134.41.237', 2000))
+    message = "link"
+    client_socket_3.sendall(message.encode())
+    client_socket_4 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket_4.connect(('43.128.207.195', 2000))
+    message = "link"
+    client_socket_4.sendall(message.encode())
 
     tmux_command = f"tmux send-keys -t myClient:{1} './app client N' C-m"
 
