@@ -51,7 +51,7 @@ func main() {
 			isMaliciousNode = os.Args[5] // 使用提供的第三个参数
 		}
 		network.PrimaryNodeChangeFreq = 1000
-		network.CommitteeNodeNumber = clusterNodeNumbers / 2
+		network.CommitteeNodeNumber = clusterNodeNumbers / 4
 		if network.CommitteeNodeNumber < 4 {
 			network.CommitteeNodeNumber = 4
 		}
