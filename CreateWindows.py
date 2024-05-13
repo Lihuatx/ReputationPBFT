@@ -6,7 +6,8 @@ import threading
 
 # 定义命令模板和数量
 command_template = 'app.exe'
-groups = ['N', 'M', 'P', 'J', "K"]
+#groups = ['N', 'M', 'P', 'J', "K"]
+groups = ['N']
 arg = sys.argv[2]
 nodes_per_group = int(arg)
 z = int(sys.argv[3])

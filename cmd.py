@@ -9,7 +9,7 @@ import saveData
 
 exeCluster = sys.argv[1]
 cluster_num = "5 "
-node_numList = ["22 ", "28 ", "34 "]
+node_numList = ["4 ", "10 ","16 ", "22 ", "28 ", "34 ","40 ", "46 "]
 PrimaryClusterWaitTime = 5
 
 # 定义集群中的不同模式以及服务器IP（可以按实际情况填入具体IP地址）

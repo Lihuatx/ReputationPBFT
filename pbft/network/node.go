@@ -257,7 +257,7 @@ func NewNode(nodeID string, clusterName string, ismaliciousNode string) *Node {
 		nodeId := node.ClusterName + strconv.Itoa(i)
 		node.ActiveCommitteeNode[nodeId] = CommitteeNode
 	}
-	consensus.F = CommitteeNodeNumber / 3
+	consensus.F = (CommitteeNodeNumber - 1) / 3
 
 	// 专门用于收取客户端请求,防止堵塞其他线程
 	go node.resolveClientRequest()
@@ -727,7 +727,10 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 	if !node.RsaVerySignWithSha256(digest, prepareMsg.Sign, node.getPubKey(node.ClusterName, prepareMsg.NodeID)) {
 		fmt.Println("节点签名验证失败！,拒绝执行prepare")
 	}
-
+	//主节点是不广播prepare的，所以为自己投一票
+	if node.CurrentState.MsgLogs.PrepareMsgs[node.NodeID] == nil && node.NodeID != node.View.Primary {
+		node.CurrentState.MsgLogs.PrepareMsgs[node.NodeID] = prepareMsg
+	}
 	commitMsg, err := node.CurrentState.Prepare(prepareMsg)
 	if err != nil {
 		ErrMessage(prepareMsg)
@@ -775,16 +778,25 @@ func (node *Node) appendScoresToFile(filename string) {
 		fmt.Println("Error writing to file:", err)
 		return
 	}
-	for value, _type := range node.ActiveCommitteeNode {
-		if _type == CommitteeNode {
-			line := fmt.Sprintf("%s: %d\n", value, node.ReScore[node.ClusterName][value])
-			_, err := file.WriteString(line)
-			if err != nil {
-				fmt.Println("Error writing to file:", err)
-				return
-			}
+	for i := 0; i < 4; i++ {
+		nodeId := "N" + strconv.Itoa(i)
+		line := fmt.Sprintf("%s: %d\n", nodeId, node.ReScore[node.ClusterName][nodeId])
+		_, err := file.WriteString(line)
+		if err != nil {
+			fmt.Println("Error writing to file:", err)
+			return
 		}
 	}
+	//for value, _type := range node.ActiveCommitteeNode {
+	//	if _type == CommitteeNode {
+	//		line := fmt.Sprintf("%s: %d\n", value, node.ReScore[node.ClusterName][value])
+	//		_, err := file.WriteString(line)
+	//		if err != nil {
+	//			fmt.Println("Error writing to file:", err)
+	//			return
+	//		}
+	//	}
+	//}
 }
 
 func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
@@ -894,9 +906,9 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 			node.ReElement.Active = make(map[string]int)
 
 			//// 记录信用分值的记得删除
-			//if node.ClusterName == "N" && node.NodeID == node.View.Primary {
-			//	node.appendScoresToFile("scores.txt")
-			//}
+			if node.ClusterName == "N" && node.NodeID == node.View.Primary {
+				node.appendScoresToFile("scores.txt")
+			}
 		}
 
 		LogStage("Commit", true)
@@ -916,10 +928,10 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 
 		node.MsgBuffer.PendingMsgs = append(node.MsgBuffer.PendingMsgs, committedMsg)
 
-		for _, value := range node.MsgBuffer.PendingMsgs {
-			fmt.Printf("Get Commit %v ", value.Requests[0].Operation)
-		}
-		fmt.Printf("\n")
+		//for _, value := range node.MsgBuffer.PendingMsgs {
+		//	fmt.Printf("Get Commit %v ", value.Requests[0].Operation)
+		//}
+		//fmt.Printf("\n")
 
 		//go func() {
 		if node.NodeID == node.View.Primary { // 本地共识结束后，主节点将本地达成共识的请求发送至其他集群的主节点
