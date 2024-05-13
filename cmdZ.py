@@ -1,4 +1,4 @@
-## 这是测试不同node num 参数的实验
+## 这是测试不同cluster num参数的实验
 
 import subprocess
 import sys
@@ -8,7 +8,8 @@ import time
 import saveData
 
 exeCluster = sys.argv[1]
-cluster_num = "5 "
+cluster_num = sys.argv[2]
+node_num = 120
 node_numList = ["22 ", "28 ", "34 "]
 PrimaryClusterWaitTime = 5
 
@@ -56,5 +57,6 @@ def startCmd(node_num, cluster_num):
             subprocess.run(cmd, shell=True)
 
 if __name__ == "__main__":
-    for node_num in node_numList:
-        BatchTest(node_num, cluster_num)
+    n = node_num / int(cluster_num)
+    BatchTest(n, cluster_num)
+

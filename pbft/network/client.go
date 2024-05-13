@@ -24,11 +24,12 @@ var ClientURL = map[string]string{
 }
 
 type Client struct {
-	ClientID   string
-	url        string
-	cluster    string
-	NodeTable  map[string]map[string]string // key=nodeID, value=url
-	msgTimeLog map[int64]reply
+	ClientID      string
+	url           string
+	cluster       string
+	NodeTable     map[string]map[string]string // key=nodeID, value=url
+	msgTimeLog    map[int64]reply
+	sendMsgNumber int
 }
 
 func NewClient(clusterName string) *Client {
@@ -43,6 +44,7 @@ func NewClient(clusterName string) *Client {
 
 func (client *Client) SendMsg(sendMsgNumber int) error {
 	client.NodeTable = LoadNodeTable("nodetable.txt")
+	client.sendMsgNumber = sendMsgNumber
 	primary := client.cluster + "0"
 	url := client.NodeTable[client.cluster][primary]
 	msg := consensus.RequestMsg{
@@ -73,7 +75,7 @@ func (client *Client) SendMsg(sendMsgNumber int) error {
 
 func (client *Client) GetReply(msg consensus.ReplyMsg) {
 	duration := time.Since(client.msgTimeLog[msg.Timestamp].startTime)
-	cmd := "msg: Client-" + client.cluster + "499"
+	cmd := "msg: Client-" + client.cluster + strconv.Itoa(client.sendMsgNumber-1)
 	if client.msgTimeLog[msg.Timestamp].msg.Operation == cmd {
 		fmt.Println("save Time!!!")
 		// 创建文件并写入 duration
