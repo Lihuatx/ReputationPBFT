@@ -11,7 +11,7 @@ exeCluster = sys.argv[1]
 cluster_num = "5 "
 node_numList = ["30 ","48 ","66 ","90 ","112 ","138 ","160 "]
 node_numList = ["138 ","160 "]
-PrimaryClusterWaitTime = 5
+PrimaryClusterWaitTime = 8
 
 # 定义集群中的不同模式以及服务器IP（可以按实际情况填入具体IP地址）
 clusters = ['N', 'M', 'P', 'J', 'K']
