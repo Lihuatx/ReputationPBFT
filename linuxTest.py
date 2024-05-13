@@ -59,10 +59,10 @@ if arg == "N":
     client_socket_3.connect(('43.134.41.237', 2000))
     message = "link"
     client_socket_3.sendall(message.encode())
-    # client_socket_4 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # client_socket_4.connect(('43.128.207.195', 2000))
-    # message = "link"
-    # client_socket_4.sendall(message.encode())
+    client_socket_4 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket_4.connect(('43.128.207.195', 2000))
+    message = "link"
+    client_socket_4.sendall(message.encode())
 
     tmux_command = f"tmux send-keys -t myClient:{1} './app client N' C-m"
 
