@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
 )
@@ -28,9 +29,23 @@ func NewServer(nodeID string, clusterName string, isMaliciousNode string) *Serve
 
 func (server *Server) Start() {
 	fmt.Printf("Server will be started at %s...\n", server.url)
-	if err := http.ListenAndServe(server.url, nil); err != nil {
-		fmt.Println(err)
+	// 创建一个自定义的http.Server
+	srv := &http.Server{
+		Addr:         server.url,
+		Handler:      http.DefaultServeMux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  90 * time.Second,
+		// 可以根据需要添加更多的配置
+	}
+	listener, err := net.Listen("tcp", server.url)
+	if err != nil {
+		fmt.Println("Error starting server:", err)
 		return
+	}
+
+	if err := srv.Serve(listener); err != nil {
+		fmt.Println("Error running server:", err)
 	}
 }
 
