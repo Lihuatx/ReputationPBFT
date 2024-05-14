@@ -965,7 +965,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 			matches := re.FindStringSubmatch(node.NodeID)
 			numberStr := matches[0]                 // 提取到的数字部分作为字符串
 			numberInt, _ := strconv.Atoi(numberStr) // 将字符串转换为整数
-			if numberInt == 1 && (node.View.ID%10 == 0) {
+			if numberInt == 1 {
 				CompleteTime := time.Since(node.AcceptRequestTime[commitMsg.SequenceID])
 				file, err := os.OpenFile("LocalConsensusCompleteTime.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 				if err != nil {
@@ -1093,7 +1093,20 @@ func (node *Node) PrimaryNodeShareMsg() error {
 		//consensus.F = numOfActiveCommitteeNode / 3
 
 		node.Broadcast(node.ClusterName, sendMsg, "/GlobalToLocal")
+		Sstart := time.Now()
 		node.ShareLocalConsensus(GlobalShareMsg, "/global")
+		end := time.Since(Sstart)
+
+		file, err := os.OpenFile("PrimaryShareToGlobal.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+		// 使用fmt.Fprintf格式化写入内容到文件
+		_, err = fmt.Fprintf(file, "GlobalViewID:%s  PrimaryShareToGlobal Used Time: %s\n", node.GlobalViewID, end)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		// 主节点达成本地共识，进行全局共识的排序和执行
 		node.GlobalViewIDLock.Lock()
