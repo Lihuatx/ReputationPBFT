@@ -1103,7 +1103,7 @@ func (node *Node) PrimaryNodeShareMsg() error {
 		}
 		defer file.Close()
 		// 使用fmt.Fprintf格式化写入内容到文件
-		_, err = fmt.Fprintf(file, "GlobalViewID:%s  PrimaryShareToGlobal Used Time: %s\n", node.GlobalViewID, end)
+		_, err = fmt.Fprintf(file, "CommittedNodeNum:%d  PrimaryShareToGlobal Used Time: %s\n", CommitteeNodeNumber, end)
 		if err != nil {
 			log.Fatal(err)
 		}
