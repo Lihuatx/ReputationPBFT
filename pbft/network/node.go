@@ -960,6 +960,8 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 			node.PrimaryNodeShareMsg()
 
 		} else {
+			//CompleteTime := time.Since(node.AcceptRequestTime[commitMsg.SequenceID])
+
 			node.View.ID = oldViewID + 1
 			node.CurrentState.CurrentStage = consensus.Committed
 			node.CheckViewChangeLock.Lock()
