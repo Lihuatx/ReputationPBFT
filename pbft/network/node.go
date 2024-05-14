@@ -344,19 +344,9 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 		return err
 	}
 	sizeInMB := float64(len(jsonMsg)) / (1024 * 1024)
-
-	file, err := os.OpenFile("PrimaryShareTMsgSize.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	// 使用fmt.Fprintf格式化写入内容到文件
-	_, err = fmt.Fprintf(file, "CommittedNodeNum:%d  PrimaryShareToGlobal Used Time: %.2f MB\n", CommitteeNodeNumber, sizeInMB)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	cnt := 0.0
 	for i := 0; i < ClusterNumber; i++ {
+		cnt += 1.0
 		cluster := Allcluster[i]
 		if cluster == node.ClusterName {
 			continue
@@ -367,6 +357,16 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 		send(url+path, jsonMsg)
 	}
 
+	file, err := os.OpenFile("PrimaryShareTMsgSize.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	// 使用fmt.Fprintf格式化写入内容到文件
+	_, err = fmt.Fprintf(file, "CommittedNodeNum:%d  PrimaryShareToGlobal Used Time: %.2f MB\n", CommitteeNodeNumber, sizeInMB*cnt)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return nil
 }
 
