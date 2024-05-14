@@ -16,7 +16,7 @@ PrimaryClusterWaitTime = 5
 # 定义集群中的不同模式以及服务器IP（可以按实际情况填入具体IP地址）
 clusters = ['N', 'M', 'P', 'J', 'K']
 cmd_head = "./test.sh "
-base_server_ips = ["43.129.220.90", "43.155.176.149", "43.163.234.202", "43.134.41.237", "43.128.207.195"]
+base_server_ips = ["43.135.71.175", "150.109.252.106", "43.163.237.164", "150.109.23.97", "43.133.107.238"]
 
 def BatchTest(node_num, cluster_num):
     testCnt = 0

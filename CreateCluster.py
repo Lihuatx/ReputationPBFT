@@ -18,7 +18,7 @@ def run_commands(arg):
 
     # 执行 go build 命令
     print("Building Go application...")
-    #subprocess.run(['go', 'build', '-o', 'app'])
+    subprocess.run(['go', 'build', '-o', 'app'])
 
     # 等待一段时间以确保编译完成
     # print("Waiting for build to finish...")

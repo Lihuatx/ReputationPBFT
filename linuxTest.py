@@ -6,6 +6,9 @@ import threading
 
 arg = sys.argv[1]
 
+base_server_ips = ["43.135.71.175", "150.109.252.106", "43.163.237.164", "150.109.23.97", "43.133.107.238"]
+
+
 def close_socket(client_socket):
     client_socket.close()
     print("连接已关闭")
@@ -48,19 +51,19 @@ if arg == "N":
     subprocess.run(['tmux', 'new-window', '-t', f'myClient:{1}', '-n', "Client-1"])
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(('43.155.176.149', 2000))
+    client_socket.connect((base_server_ips[2], 2000))
     message = "link"
     client_socket.sendall(message.encode())
     client_socket_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket_2.connect(('43.163.234.202', 2000))
+    client_socket_2.connect((base_server_ips[3], 2000))
     message = "link"
     client_socket_2.sendall(message.encode())
     client_socket_3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket_3.connect(('43.134.41.237', 2000))
+    client_socket_3.connect((base_server_ips[4], 2000))
     message = "link"
     client_socket_3.sendall(message.encode())
     client_socket_4 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket_4.connect(('43.128.207.195', 2000))
+    client_socket_4.connect((base_server_ips[5], 2000))
     message = "link"
     client_socket_4.sendall(message.encode())
 
