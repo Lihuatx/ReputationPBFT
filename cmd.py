@@ -9,7 +9,7 @@ import saveData
 
 exeCluster = sys.argv[1]
 cluster_num = "5 "
-node_numList = ["28 ","29 "]
+node_numList = ["28 ","29 ","30 ","31 "]
 #node_numList = ["160 "]
 PrimaryClusterWaitTime = 12
 
