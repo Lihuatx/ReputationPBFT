@@ -338,11 +338,10 @@ func (node *Node) Broadcast(cluster string, msg interface{}, path string) map[st
 
 // ShareLocalConsensus 本地达成共识后，主节点调用当前函数发送信息给其他集群的主节点节点
 func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string) error {
-	errorMap := make(map[string]map[string]error)
 
 	jsonMsg, err := json.Marshal(msg)
 	if err != nil {
-		return nil
+		return err
 	}
 	sizeInMB := float64(len(jsonMsg)) / (1024 * 1024)
 
@@ -352,7 +351,7 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 	}
 	defer file.Close()
 	// 使用fmt.Fprintf格式化写入内容到文件
-	_, err = fmt.Fprintf(file, "CommittedNodeNum:%d  PrimaryShareToGlobal Used Time: %.2f bytes\n", CommitteeNodeNumber, sizeInMB)
+	_, err = fmt.Fprintf(file, "CommittedNodeNum:%d  PrimaryShareToGlobal Used Time: %.2f MB\n", CommitteeNodeNumber, sizeInMB)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -364,12 +363,6 @@ func (node *Node) ShareLocalConsensus(msg *consensus.GlobalShareMsg, path string
 		}
 		primaryNodeID := PrimaryNode[cluster]
 		url := node.NodeTable[cluster][primaryNodeID]
-		jsonMsg, err := json.Marshal(msg)
-		if err != nil {
-			errorMap[cluster][PrimaryNode[cluster]] = err
-			continue
-		}
-		sizeInMB := float64(len(jsonMsg)) / (1024 * 1024)
 		fmt.Printf("GlobalMsg Send to %s Size of JSON message: %.2f MB\n", url+path, sizeInMB)
 		send(url+path, jsonMsg)
 	}
