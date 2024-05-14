@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -960,8 +961,23 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 			node.PrimaryNodeShareMsg()
 
 		} else {
-			//CompleteTime := time.Since(node.AcceptRequestTime[commitMsg.SequenceID])
-
+			re := regexp.MustCompile(`[0-9]+`)
+			matches := re.FindStringSubmatch(node.NodeID)
+			numberStr := matches[0]                 // 提取到的数字部分作为字符串
+			numberInt, _ := strconv.Atoi(numberStr) // 将字符串转换为整数
+			if numberInt == 1 && (node.View.ID%10 == 0) {
+				CompleteTime := time.Since(node.AcceptRequestTime[commitMsg.SequenceID])
+				file, err := os.OpenFile("LocalConsensusCompleteTime.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer file.Close()
+				// 使用fmt.Fprintf格式化写入内容到文件
+				_, err = fmt.Fprintf(file, "CommitteeNode %d  LocalConsensusCompleteTime: %s\n", CommitteeNodeNumber, CompleteTime)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
 			node.View.ID = oldViewID + 1
 			node.CurrentState.CurrentStage = consensus.Committed
 			node.CheckViewChangeLock.Lock()
