@@ -11,7 +11,7 @@ exeCluster = sys.argv[1]
 cluster_num = "5 "
 node_numList = ["10 ","16 ","22 ","28 ","34 ","40 "]
 #node_numList = ["4 ","10 ","16 ","22 ","28 ","34 ","40 ","46 ","52 ","58 ","64 ","70 ","76 ","82 ","88 ","94 "]
-node_numList = ["90 ","100 "]
+node_numList = ["100 "]
 #node_numList = ["160 "]
 
 PrimaryClusterWaitTime = 12
