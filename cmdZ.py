@@ -28,7 +28,7 @@ def BatchTest(node_num, cluster_num):
     else:
         with open(xls_file, 'a') as xls:
             xls.write(f"Duration time(N = {node_num} Z = {cluster_num})\n")
-    while testCnt < 10:
+    while testCnt < 5:
         print(f"\n--- Test count {testCnt + 1}")
 
         cmd_thread = threading.Thread(target=startCmd, args=(node_num, cluster_num))
