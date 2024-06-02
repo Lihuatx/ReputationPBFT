@@ -330,7 +330,7 @@ func (node *Node) Broadcast(cluster string, msg interface{}, path string) map[st
 		}
 		//fmt.Printf("Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
 		send(url+path, jsonMsg)
-		//time.Sleep(2 * time.Millisecond)
+		time.Sleep(2 * time.Millisecond)
 	}
 
 	if len(errorMap) == 0 {
