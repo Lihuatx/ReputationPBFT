@@ -1097,7 +1097,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 				}
 				defer file.Close()
 				// 使用fmt.Fprintf格式化写入内容到文件
-				_, err = fmt.Fprintf(file, "CommitteeNode %d  LocalConsensusCompleteTime: %s\n", CommitteeNodeNumber, CompleteTime)
+				_, err = fmt.Fprintf(file, "CommitteeNode %d ViewID %v  LocalConsensusCompleteTime: %s\n", CommitteeNodeNumber, node.View.ID, CompleteTime)
 				if err != nil {
 					log.Fatal(err)
 				}
