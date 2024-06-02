@@ -994,7 +994,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 						sum += float32(value)
 					}
 					historySuccessRate = sum / float32(len(node.ReElement.HistoryScore[nodeID]))
-					fmt.Printf("historySuccessRate %v\n", historySuccessRate)
+					//fmt.Printf("historySuccessRate %v\n", historySuccessRate)
 				}
 				historyScore := int(historySuccessRate * 4)
 				// 如果活跃度为 0 ，当前节点的此次共识结果为失败，信用值减少

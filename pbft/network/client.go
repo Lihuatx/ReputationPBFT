@@ -90,7 +90,7 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 	numbers := re.FindString(client.msgTimeLog[msg.Timestamp].msg.Operation)
 	number, _ := strconv.Atoi(numbers)
 	duration := time.Since(client.msgTimeLog[msg.Timestamp].startTime)
-	if number%50 == 0 {
+	if number%1 == 0 {
 		cha := time.Since(PreTime)
 		// 检查文件是否存在
 		_, err := os.Stat("eachConsensusCostTIme.txt")
@@ -121,6 +121,7 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 				log.Fatal("Cannot write to file", err)
 			}
 		}
+
 		fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
 		PreTime = time.Now()
 	}

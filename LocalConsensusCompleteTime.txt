@@ -94,3 +94,89 @@ CommitteeNode 20  LocalConsensusCompleteTime: 984.6197ms
 CommitteeNode 20  LocalConsensusCompleteTime: 1.1168712s
 CommitteeNode 20  LocalConsensusCompleteTime: 996.4711ms
 CommitteeNode 20  LocalConsensusCompleteTime: 930.2206ms
+CommitteeNode 30 ViewID 10000000000  LocalConsensusCompleteTime: 1.9346958s
+CommitteeNode 30 ViewID 10000000001  LocalConsensusCompleteTime: 1.8171734s
+CommitteeNode 30 ViewID 10000000002  LocalConsensusCompleteTime: 1.8811421s
+CommitteeNode 30 ViewID 10000000003  LocalConsensusCompleteTime: 1.9486383s
+CommitteeNode 30 ViewID 10000000004  LocalConsensusCompleteTime: 2.0884611s
+修改节点 N3 为非委员会节点！
+修改节点 N2 为非委员会节点！
+修改节点 N6 为非委员会节点！
+修改节点 N5 为非委员会节点！
+CommitteeNode 30 ViewID 10000000005  LocalConsensusCompleteTime: 1.9038578s
+CommitteeNode 30 ViewID 10000000006  LocalConsensusCompleteTime: 1.8865561s
+修改节点 N1 为非委员会节点！
+修改节点 N8 为非委员会节点！
+CommitteeNode 30 ViewID 10000000007  LocalConsensusCompleteTime: 1.784505s
+修改节点 N7 为非委员会节点！
+CommitteeNode 30 ViewID 10000000008  LocalConsensusCompleteTime: 2.1540845s
+CommitteeNode 30 ViewID 10000000009  LocalConsensusCompleteTime: 1.8161231s
+修改节点 N4 为非委员会节点！
+修改节点 N31 为非委员会节点！
+CommitteeNode 30 ViewID 10000000010  LocalConsensusCompleteTime: 1.7061119s
+修改节点 N30 为非委员会节点！
+修改节点 N33 为非委员会节点！
+CommitteeNode 30 ViewID 10000000011  LocalConsensusCompleteTime: 2.0277206s
+修改节点 N35 为非委员会节点！
+修改节点 N32 为非委员会节点！
+CommitteeNode 30 ViewID 10000000012  LocalConsensusCompleteTime: 1.9006346s
+修改节点 N34 为非委员会节点！
+CommitteeNode 30 ViewID 10000000013  LocalConsensusCompleteTime: 1.8140009s
+修改节点 N9 为非委员会节点！
+CommitteeNode 30 ViewID 10000000014  LocalConsensusCompleteTime: 1.7935769s
+修改节点 N36 为非委员会节点！
+修改节点 N38 为非委员会节点！
+CommitteeNode 30 ViewID 10000000015  LocalConsensusCompleteTime: 1.7156995s
+CommitteeNode 30 ViewID 10000000016  LocalConsensusCompleteTime: 2.0588987s
+CommitteeNode 30 ViewID 10000000017  LocalConsensusCompleteTime: 1.7334835s
+CommitteeNode 30 ViewID 10000000018  LocalConsensusCompleteTime: 1.7916944s
+修改节点 N37 为非委员会节点！
+CommitteeNode 30 ViewID 10000000019  LocalConsensusCompleteTime: 1.8317274s
+CommitteeNode 30 ViewID 10000000000  LocalConsensusCompleteTime: 1.8026658s
+CommitteeNode 30 ViewID 10000000001  LocalConsensusCompleteTime: 1.9794115s
+CommitteeNode 30 ViewID 10000000002  LocalConsensusCompleteTime: 1.9266864s
+CommitteeNode 30 ViewID 10000000003  LocalConsensusCompleteTime: 2.101909s
+CommitteeNode 30 ViewID 10000000004  LocalConsensusCompleteTime: 1.5592825s
+修改节点 N7 为非委员会节点！
+修改节点 N6 为非委员会节点！
+CommitteeNode 30 ViewID 10000000005  LocalConsensusCompleteTime: 2.0091337s
+修改节点 N2 为非委员会节点！
+修改节点 N1 为非委员会节点！
+修改节点 N3 为非委员会节点！
+CommitteeNode 30 ViewID 10000000006  LocalConsensusCompleteTime: 1.8478894s
+修改节点 N4 为非委员会节点！
+CommitteeNode 30 ViewID 10000000007  LocalConsensusCompleteTime: 1.7921619s
+修改节点 N5 为非委员会节点！
+CommitteeNode 30 ViewID 10000000008  LocalConsensusCompleteTime: 2.2314396s
+CommitteeNode 30 ViewID 10000000009  LocalConsensusCompleteTime: 1.9631288s
+CommitteeNode 30 ViewID 10000000010  LocalConsensusCompleteTime: 1.8434697s
+修改节点 N8 为非委员会节点！
+修改节点 N9 为非委员会节点！
+CommitteeNode 30 ViewID 10000000011  LocalConsensusCompleteTime: 2.1295442s
+修改节点 N33 为非委员会节点！
+修改节点 N32 为非委员会节点！
+CommitteeNode 30 ViewID 10000000012  LocalConsensusCompleteTime: 1.8640592s
+修改节点 N30 为非委员会节点！
+CommitteeNode 30 ViewID 10000000013  LocalConsensusCompleteTime: 1.7569528s
+修改节点 N31 为非委员会节点！
+CommitteeNode 30 ViewID 10000000014  LocalConsensusCompleteTime: 1.8237125s
+修改节点 N36 为非委员会节点！
+CommitteeNode 30 ViewID 10000000015  LocalConsensusCompleteTime: 1.8404906s
+修改节点 N34 为非委员会节点！
+CommitteeNode 30 ViewID 10000000016  LocalConsensusCompleteTime: 1.9515064s
+CommitteeNode 30 ViewID 10000000017  LocalConsensusCompleteTime: 1.7372149s
+修改节点 N35 为非委员会节点！
+CommitteeNode 30 ViewID 10000000018  LocalConsensusCompleteTime: 1.6068284s
+修改节点 N37 为非委员会节点！
+CommitteeNode 30 ViewID 10000000019  LocalConsensusCompleteTime: 1.645122s
+CommitteeNode 30 ViewID 10000000020  LocalConsensusCompleteTime: 1.7617374s
+CommitteeNode 30 ViewID 10000000021  LocalConsensusCompleteTime: 1.8450021s
+CommitteeNode 30 ViewID 10000000022  LocalConsensusCompleteTime: 1.6441231s
+修改节点 N38 为非委员会节点！
+CommitteeNode 30 ViewID 10000000023  LocalConsensusCompleteTime: 1.8396556s
+CommitteeNode 30 ViewID 10000000024  LocalConsensusCompleteTime: 1.8141566s
+CommitteeNode 30 ViewID 10000000025  LocalConsensusCompleteTime: 1.854499s
+CommitteeNode 30 ViewID 10000000026  LocalConsensusCompleteTime: 1.918116s
+CommitteeNode 30 ViewID 10000000027  LocalConsensusCompleteTime: 1.7947297s
+CommitteeNode 30 ViewID 10000000028  LocalConsensusCompleteTime: 1.634677s
+CommitteeNode 30 ViewID 10000000029  LocalConsensusCompleteTime: 1.6779444s
