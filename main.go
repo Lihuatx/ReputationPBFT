@@ -32,7 +32,7 @@ func main() {
 
 	nodeID := os.Args[1]
 	clusterName := os.Args[2]
-	sendMsgNumber := 30
+	sendMsgNumber := 40
 	if nodeID == "client" {
 		client := network.ClientStart(clusterName)
 
