@@ -121,6 +121,7 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 				log.Fatal("Cannot write to file", err)
 			}
 		}
+		fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
 		PreTime = time.Now()
 	}
 	cmd := "msg: Client-" + client.cluster + strconv.Itoa(client.sendMsgNumber-1)
