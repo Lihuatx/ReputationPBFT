@@ -42,6 +42,7 @@ func NewClient(clusterName string) *Client {
 		cluster:    clusterName,
 		msgTimeLog: make(map[int64]reply),
 	}
+	PreTime = time.Now()
 	return client
 }
 
@@ -78,9 +79,12 @@ func (client *Client) SendMsg(sendMsgNumber int) error {
 	return nil
 }
 
+var PreTime time.Time
+
 func (client *Client) GetReply(msg consensus.ReplyMsg) {
 	lock.Lock()
 	duration := time.Since(client.msgTimeLog[msg.Timestamp].startTime)
+	cha := time.Since(PreTime)
 	cmd := "msg: Client-" + client.cluster + strconv.Itoa(client.sendMsgNumber-1)
 	if client.msgTimeLog[msg.Timestamp].msg.Operation == cmd {
 		fmt.Println("save Time!!!")
@@ -98,6 +102,7 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 		}
 
 	}
-	fmt.Printf("msg %s took %s\n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration)
+	fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
+	PreTime = time.Now()
 	lock.Unlock()
 }

@@ -32,7 +32,7 @@ func main() {
 
 	nodeID := os.Args[1]
 	clusterName := os.Args[2]
-	sendMsgNumber := 500
+	sendMsgNumber := 30
 	if nodeID == "client" {
 		client := network.ClientStart(clusterName)
 
@@ -50,8 +50,8 @@ func main() {
 		if len(os.Args) > 5 { // 判断节点是正常节点还是恶意节点
 			isMaliciousNode = os.Args[5] // 使用提供的第三个参数
 		}
-		network.PrimaryNodeChangeFreq = 1000
-		network.CommitteeNodeNumber = clusterNodeNumbers / 3
+		network.PrimaryNodeChangeFreq = 51
+		network.CommitteeNodeNumber = clusterNodeNumbers / 2
 		if network.CommitteeNodeNumber < 4 {
 			network.CommitteeNodeNumber = 4
 		}

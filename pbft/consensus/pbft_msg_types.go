@@ -23,12 +23,15 @@ type ReplyMsg struct {
 }
 
 type PrePrepareMsg struct {
-	ViewID     int64            `json:"viewID"`
-	SequenceID int64            `json:"sequenceID"`
-	Digest     string           `json:"digest"`
-	NodeID     string           `json:"nodeID"` //添加nodeID
-	RequestMsg *BatchRequestMsg `json:"requestMsg"`
-	Sign       []byte           `json:"sign"`
+	ViewID                int64             `json:"viewID"`
+	SequenceID            int64             `json:"sequenceID"`
+	Digest                string            `json:"digest"`
+	NodeID                string            `json:"nodeID"` //添加nodeID
+	RequestMsg            *BatchRequestMsg  `json:"requestMsg"`
+	Sign                  []byte            `json:"sign"`
+	Score                 map[string]uint16 `json:"score"`
+	AddNewCommitteeNodeID []string          `json:"AddNewCommitteeNodeID"` // 用于替换信用值不够的节点
+	DeleteCommittedNodeID []string
 }
 
 type VoteMsg struct {
@@ -94,6 +97,6 @@ const (
 	CommitMsg
 )
 
-const BatchSize = 50
+const BatchSize = 1
 
 var GlobalViewID int

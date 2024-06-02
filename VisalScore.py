@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 #
 #
 # # 文件名从 'scores1.txt' 到 'scores5.txt'
-# file_list = [f'scores{i}.txt' for i in range(1, 2)]
+# file_list = [f'scores{i}.txt' for i in range(1, 6)]
 # average_scores = read_and_average_scores(file_list)
 # plot_data(average_scores)
 

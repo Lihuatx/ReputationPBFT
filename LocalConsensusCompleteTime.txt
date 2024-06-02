@@ -1,0 +1,96 @@
+CommitteeNode 14  LocalConsensusCompleteTime: 817.8453ms
+CommitteeNode 14  LocalConsensusCompleteTime: 835.2176ms
+CommitteeNode 14  LocalConsensusCompleteTime: 800.4226ms
+CommitteeNode 14  LocalConsensusCompleteTime: 915.5131ms
+修改节点 N2 为非委员会节点！
+修改节点 N1 为非委员会节点！
+CommitteeNode 14  LocalConsensusCompleteTime: 874.6892ms
+CommitteeNode 14  LocalConsensusCompleteTime: 838.6911ms
+修改节点 N4 为非委员会节点！
+CommitteeNode 14  LocalConsensusCompleteTime: 826.1678ms
+CommitteeNode 14  LocalConsensusCompleteTime: 838.6111ms
+修改节点 N3 为非委员会节点！
+修改节点 N14 为非委员会节点！
+CommitteeNode 14  LocalConsensusCompleteTime: 758.3753ms
+修改节点 N15 为非委员会节点！
+CommitteeNode 14  LocalConsensusCompleteTime: 867.5819ms
+---CommitteeNode 14  LocalConsensusCompleteTime: 949.9519ms
+CommitteeNode 14  LocalConsensusCompleteTime: 946.2378ms
+CommitteeNode 14  LocalConsensusCompleteTime: 927.4451ms
+CommitteeNode 14  LocalConsensusCompleteTime: 973.2721ms
+CommitteeNode 14  LocalConsensusCompleteTime: 876.4967ms
+CommitteeNode 14  LocalConsensusCompleteTime: 972.5672ms
+修改节点 N3 为非委员会节点！
+CommitteeNode 14  LocalConsensusCompleteTime: 879.2201ms
+修改节点 N2 为非委员会节点！
+CommitteeNode 14  LocalConsensusCompleteTime: 898.0806ms
+CommitteeNode 14  LocalConsensusCompleteTime: 841.2266ms
+修改节点 N4 为非委员会节点！
+CommitteeNode 14  LocalConsensusCompleteTime: 1.0216001s
+CommitteeNode 14  LocalConsensusCompleteTime: 809.2383ms
+CommitteeNode 14  LocalConsensusCompleteTime: 914.2782ms
+修改节点 N14 为非委员会节点！
+CommitteeNode 14  LocalConsensusCompleteTime: 898.888ms
+修改节点 N16 为非委员会节点！
+CommitteeNode 14  LocalConsensusCompleteTime: 943.8365ms
+CommitteeNode 14  LocalConsensusCompleteTime: 801.8332ms
+修改节点 N15 为非委员会节点！
+CommitteeNode 14  LocalConsensusCompleteTime: 844.5146ms
+修改节点 N1 为非委员会节点！
+修改节点 N17 为非委员会节点！
+CommitteeNode 14  LocalConsensusCompleteTime: 859.199ms
+CommitteeNode 14  LocalConsensusCompleteTime: 906.4263ms
+CommitteeNode 14  LocalConsensusCompleteTime: 924.2038ms
+CommitteeNode 14  LocalConsensusCompleteTime: 816.4764ms
+CommitteeNode 14  LocalConsensusCompleteTime: 943.3136ms
+CommitteeNode 14  LocalConsensusCompleteTime: 1.0333654s
+CommitteeNode 14  LocalConsensusCompleteTime: 800.274ms
+CommitteeNode 14  LocalConsensusCompleteTime: 820.917ms
+CommitteeNode 14  LocalConsensusCompleteTime: 847.43ms
+CommitteeNode 14  LocalConsensusCompleteTime: 1.0210998s
+CommitteeNode 14  LocalConsensusCompleteTime: 881.9667ms
+CommitteeNode 14  LocalConsensusCompleteTime: 907.0557ms
+CommitteeNode 14  LocalConsensusCompleteTime: 880.6063ms
+CommitteeNode 14  LocalConsensusCompleteTime: 892.0901ms
+CommitteeNode 20  LocalConsensusCompleteTime: 1.1423128s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.3720298s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.0793233s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.1820906s
+修改节点 N4 为非委员会节点！
+修改节点 N6 为非委员会节点！
+修改节点 N5 为非委员会节点！
+CommitteeNode 20  LocalConsensusCompleteTime: 1.3328658s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.0823856s
+修改节点 N1 为非委员会节点！
+修改节点 N2 为非委员会节点！
+修改节点 N3 为非委员会节点！
+CommitteeNode 20  LocalConsensusCompleteTime: 1.2558342s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.2343902s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.0758709s
+修改节点 N20 为非委员会节点！
+CommitteeNode 20  LocalConsensusCompleteTime: 1.1238856s
+修改节点 N24 为非委员会节点！
+修改节点 N25 为非委员会节点！
+CommitteeNode 20  LocalConsensusCompleteTime: 1.206871s
+CommitteeNode 20  LocalConsensusCompleteTime: 985.1759ms
+CommitteeNode 20  LocalConsensusCompleteTime: 1.0157337s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.2601188s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.0346335s
+修改节点 N21 为非委员会节点！
+修改节点 N23 为非委员会节点！
+CommitteeNode 20  LocalConsensusCompleteTime: 1.1048173s
+CommitteeNode 20  LocalConsensusCompleteTime: 987.512ms
+修改节点 N22 为非委员会节点！
+CommitteeNode 20  LocalConsensusCompleteTime: 1.0063925s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.2154985s
+CommitteeNode 20  LocalConsensusCompleteTime: 894.9992ms
+CommitteeNode 20  LocalConsensusCompleteTime: 903.9338ms
+CommitteeNode 20  LocalConsensusCompleteTime: 1.1581774s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.0013982s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.0886664s
+CommitteeNode 20  LocalConsensusCompleteTime: 1.14186s
+CommitteeNode 20  LocalConsensusCompleteTime: 982.6367ms
+CommitteeNode 20  LocalConsensusCompleteTime: 984.6197ms
+CommitteeNode 20  LocalConsensusCompleteTime: 1.1168712s
+CommitteeNode 20  LocalConsensusCompleteTime: 996.4711ms
+CommitteeNode 20  LocalConsensusCompleteTime: 930.2206ms

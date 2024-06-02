@@ -37,7 +37,7 @@ REM 调用 Python 脚本，传递变量值
 python CreateNodeTable.py %n% %server1% %server2% %server3% %server4% %server5%
 
 REM 调用另一个 Python 脚本，传递 Cluster 和 startNode 变量的值
-python CreateWindows.py %Cluster% %n% %z%
-
+REM python CreateWindows.py %Cluster% %n% %z%
+python errorNode.py %Cluster% %n% %z%
 
 pause
