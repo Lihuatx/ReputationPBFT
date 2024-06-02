@@ -94,7 +94,7 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 		cha := time.Since(PreTime)
 		fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
 		// 创建文件并写入 duration
-		file, err := os.Create("每次共识消耗时间.txt")
+		file, err := os.Create("eachConsensusCostTIme.txt")
 		if err != nil {
 			log.Fatal("Cannot create file", err)
 		}
