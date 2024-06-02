@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"strconv"
 	"sync"
 	"time"
@@ -84,47 +83,7 @@ var PreTime time.Time
 
 func (client *Client) GetReply(msg consensus.ReplyMsg) {
 	lock.Lock()
-	// 定义正则表达式，匹配字符串中的数字
-	re := regexp.MustCompile(`\d+`)
-	// 查找匹配的子字符串
-	numbers := re.FindString(client.msgTimeLog[msg.Timestamp].msg.Operation)
-	number, _ := strconv.Atoi(numbers)
 	duration := time.Since(client.msgTimeLog[msg.Timestamp].startTime)
-	if number%1 == 0 {
-		cha := time.Since(PreTime)
-		// 检查文件是否存在
-		_, err := os.Stat("eachConsensusCostTIme.txt")
-		if os.IsNotExist(err) {
-			// 文件不存在，创建文件并写入
-			file, err := os.Create("eachConsensusCostTIme.txt")
-			if err != nil {
-				log.Fatal("Cannot create file", err)
-			}
-			defer file.Close()
-
-			// 写入持续时间到文件
-			_, err = file.WriteString("Start:\n" + cha.String() + "\n")
-			if err != nil {
-				log.Fatal("Cannot write to file", err)
-			}
-		} else {
-			// 文件存在，打开文件并在末尾追加内容
-			file, err := os.OpenFile("eachConsensusCostTIme.txt", os.O_APPEND|os.O_WRONLY, 0644)
-			if err != nil {
-				log.Fatal("Cannot open file", err)
-			}
-			defer file.Close()
-
-			// 写入持续时间到文件
-			_, err = file.WriteString(cha.String() + "\n")
-			if err != nil {
-				log.Fatal("Cannot write to file", err)
-			}
-		}
-
-		fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
-		PreTime = time.Now()
-	}
 	cmd := "msg: Client-" + client.cluster + strconv.Itoa(client.sendMsgNumber-1)
 	if client.msgTimeLog[msg.Timestamp].msg.Operation == cmd {
 		fmt.Println("save Time!!!")
@@ -142,7 +101,7 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 		}
 
 	}
-	//fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
+	fmt.Printf("msg %s took %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration)
 
 	lock.Unlock()
 }
