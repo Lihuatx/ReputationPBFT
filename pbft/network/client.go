@@ -93,6 +93,18 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 	if number%50 == 0 {
 		cha := time.Since(PreTime)
 		fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
+		// 创建文件并写入 duration
+		file, err := os.Create("每次共识消耗时间.txt")
+		if err != nil {
+			log.Fatal("Cannot create file", err)
+		}
+		defer file.Close()
+
+		// 写入持续时间到文件
+		_, err = file.WriteString(cha.String())
+		if err != nil {
+			log.Fatal("Cannot write to file", err)
+		}
 		PreTime = time.Now()
 	}
 	cmd := "msg: Client-" + client.cluster + strconv.Itoa(client.sendMsgNumber-1)
