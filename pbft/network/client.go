@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"sync"
 	"time"
@@ -83,8 +84,17 @@ var PreTime time.Time
 
 func (client *Client) GetReply(msg consensus.ReplyMsg) {
 	lock.Lock()
-	duration := time.Since(client.msgTimeLog[msg.Timestamp].startTime)
-	cha := time.Since(PreTime)
+	// 定义正则表达式，匹配字符串中的数字
+	re := regexp.MustCompile(`\d+`)
+	// 查找匹配的子字符串
+	numbers := re.FindString(client.msgTimeLog[msg.Timestamp].msg.Operation)
+	number, _ := strconv.Atoi(numbers)
+	if number%50 == 0 {
+		duration := time.Since(client.msgTimeLog[msg.Timestamp].startTime)
+		cha := time.Since(PreTime)
+		fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
+		PreTime = time.Now()
+	}
 	cmd := "msg: Client-" + client.cluster + strconv.Itoa(client.sendMsgNumber-1)
 	if client.msgTimeLog[msg.Timestamp].msg.Operation == cmd {
 		fmt.Println("save Time!!!")
@@ -102,7 +112,7 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 		}
 
 	}
-	fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
-	PreTime = time.Now()
+	//fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
+
 	lock.Unlock()
 }
