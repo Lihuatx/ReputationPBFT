@@ -1001,7 +1001,7 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 				if active < 2 {
 					fmt.Printf("节点 %s 不活跃！\n", nodeID)
 					node.ReElement.HistoryScore[nodeID] = append(node.ReElement.HistoryScore[nodeID], -1)
-					success = -5 + int(-(25.0 * (1.0 - historySuccessRate)))
+					success = -5 + int(-(20.0 * (1.0 - historySuccessRate)))
 					active = -5
 				} else {
 					AddNodeNum++

@@ -89,8 +89,8 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 	// 查找匹配的子字符串
 	numbers := re.FindString(client.msgTimeLog[msg.Timestamp].msg.Operation)
 	number, _ := strconv.Atoi(numbers)
+	duration := time.Since(client.msgTimeLog[msg.Timestamp].startTime)
 	if number%50 == 0 {
-		duration := time.Since(client.msgTimeLog[msg.Timestamp].startTime)
 		cha := time.Since(PreTime)
 		fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
 		PreTime = time.Now()
