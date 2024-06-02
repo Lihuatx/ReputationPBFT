@@ -59,6 +59,8 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python script.py <arg>")
         sys.exit(1)
+    print(errorCommitteeNodeNumList)
+    print(errorNonCommitteeNodeNumList)
     arg = sys.argv[1] # clusterName
     run_commands(arg)
 
