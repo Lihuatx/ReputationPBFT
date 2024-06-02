@@ -92,18 +92,34 @@ func (client *Client) GetReply(msg consensus.ReplyMsg) {
 	duration := time.Since(client.msgTimeLog[msg.Timestamp].startTime)
 	if number%50 == 0 {
 		cha := time.Since(PreTime)
-		fmt.Printf("msg %s took %s   时间差: %s \n", client.msgTimeLog[msg.Timestamp].msg.Operation, duration, cha)
-		// 创建文件并写入 duration
-		file, err := os.Create("eachConsensusCostTIme.txt")
-		if err != nil {
-			log.Fatal("Cannot create file", err)
-		}
-		defer file.Close()
+		// 检查文件是否存在
+		_, err := os.Stat("eachConsensusCostTIme.txt")
+		if os.IsNotExist(err) {
+			// 文件不存在，创建文件并写入
+			file, err := os.Create("eachConsensusCostTIme.txt")
+			if err != nil {
+				log.Fatal("Cannot create file", err)
+			}
+			defer file.Close()
 
-		// 写入持续时间到文件
-		_, err = file.WriteString(cha.String())
-		if err != nil {
-			log.Fatal("Cannot write to file", err)
+			// 写入持续时间到文件
+			_, err = file.WriteString("Start:\n" + cha.String() + "\n")
+			if err != nil {
+				log.Fatal("Cannot write to file", err)
+			}
+		} else {
+			// 文件存在，打开文件并在末尾追加内容
+			file, err := os.OpenFile("eachConsensusCostTIme.txt", os.O_APPEND|os.O_WRONLY, 0644)
+			if err != nil {
+				log.Fatal("Cannot open file", err)
+			}
+			defer file.Close()
+
+			// 写入持续时间到文件
+			_, err = file.WriteString(cha.String() + "\n")
+			if err != nil {
+				log.Fatal("Cannot write to file", err)
+			}
 		}
 		PreTime = time.Now()
 	}
