@@ -12,14 +12,14 @@ cluster_num = "5 "
 node_numList = ["10 ","16 ","22 ","28 ","34 ","40 "]
 node_numList = ["45 ","65 ","80 ","90 ","100 "]
 node_numList = ["22 ","28 ","34 ","40 "]
-#node_numList = ["90 ","100 "]
+node_numList = ["16 "]
 
 PrimaryClusterWaitTime = 12
 
 # 定义集群中的不同模式以及服务器IP（可以按实际情况填入具体IP地址）
 clusters = ['N', 'M', 'P', 'J', 'K']
 cmd_head = "./testErrorNode.sh "
-base_server_ips = ["43.135.76.128", "43.131.229.242", "43.133.172.45", "43.156.33.133", "43.128.203.61"]
+base_server_ips = ["43.135.89.151", "43.155.173.53", "43.163.208.210", "43.133.59.162", "43.152.228.182"]
 
 def BatchTest(node_num, cluster_num):
     testCnt = 0
