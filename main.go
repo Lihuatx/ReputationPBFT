@@ -21,18 +21,16 @@ func saveScoresToText(filename string) {
 	defer file.Close()
 }
 
-// 添加性能监控结构体
 type PerformanceMetrics struct {
 	Timestamp    string
-	HeapAlloc    uint64 // 堆内存分配量
-	HeapInUse    uint64 // 正在使用的堆内存
-	StackInUse   uint64 // 正在使用的栈内存
-	NumGoroutine int    // goroutine数量
+	HeapAlloc    uint64
+	HeapInuse    uint64
+	StackInUse   uint64
+	NumGoroutine int
+	TotalAlloc   uint64 // 添加总内存分配量
 }
 
-// 添加性能监控函数
 func monitorPerformance(nodeID string) {
-	// 创建性能数据目录
 	dirName := fmt.Sprintf("performance_data_%s", time.Now().Format("20060102_150405"))
 	err := os.MkdirAll(dirName, 0755)
 	if err != nil {
@@ -40,7 +38,6 @@ func monitorPerformance(nodeID string) {
 		return
 	}
 
-	// 创建CSV文件
 	filename := filepath.Join(dirName, fmt.Sprintf("%s_performance.csv", nodeID))
 	file, err := os.Create(filename)
 	if err != nil {
@@ -49,54 +46,61 @@ func monitorPerformance(nodeID string) {
 	}
 	defer file.Close()
 
-	// 创建CSV writer
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	// 写入表头
-	writer.Write([]string{"Timestamp", "HeapAlloc(MB)", "HeapInUse(MB)", "StackInUse(MB)", "NumGoroutine"})
+	writer.Write([]string{"Timestamp", "NodeID", "HeapAlloc(MB)", "HeapInuse(MB)", "StackInUse(MB)", "NumGoroutine", "TotalAlloc(MB)"})
 
-	// 创建计时器，每秒收集一次数据
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
 	var m runtime.MemStats
+	startTime := time.Now()
 
 	fmt.Printf("Started monitoring performance for node %s\n", nodeID)
-	fmt.Println("Timestamp | HeapAlloc(MB) | HeapInUse(MB) | StackInUse(MB) | NumGoroutine")
-	fmt.Println("-----------------------------------------------------------------")
+	fmt.Println("Timestamp | NodeID | HeapAlloc(MB) | HeapInuse(MB) | StackInUse(MB) | NumGoroutine | TotalAlloc(MB)")
+	fmt.Println("-----------------------------------------------------------------------------------------")
 
 	for range ticker.C {
+		if time.Since(startTime) >= 60*time.Second {
+			fmt.Printf("Monitoring completed for node %s after 60 seconds\n", nodeID)
+			break
+		}
+
 		runtime.ReadMemStats(&m)
 		metrics := PerformanceMetrics{
 			Timestamp:    time.Now().Format("2006-01-02 15:04:05"),
 			HeapAlloc:    m.HeapAlloc,
-			HeapInUse:    m.HeapInuse,
+			HeapInuse:    m.HeapInuse,
 			StackInUse:   m.StackSys,
 			NumGoroutine: runtime.NumGoroutine(),
+			TotalAlloc:   m.TotalAlloc,
 		}
 
-		// 转换为MB并保留两位小数
 		heapAllocMB := float64(metrics.HeapAlloc) / 1024 / 1024
-		heapInUseMB := float64(metrics.HeapInUse) / 1024 / 1024
+		heapInuseMB := float64(metrics.HeapInuse) / 1024 / 1024
 		stackInUseMB := float64(metrics.StackInUse) / 1024 / 1024
+		totalAllocMB := float64(metrics.TotalAlloc) / 1024 / 1024
 
-		// 打印到控制台
-		fmt.Printf("%s | %10.2f | %11.2f | %12.2f | %12d\n",
+		// 打印格式修改，添加节点ID和总内存使用
+		fmt.Printf("%s | %6s | %11.2f MB | %12.2f MB | %13.2f MB | %11d | %12.2f MB\n",
 			metrics.Timestamp,
+			nodeID,
 			heapAllocMB,
-			heapInUseMB,
+			heapInuseMB,
 			stackInUseMB,
 			metrics.NumGoroutine,
+			totalAllocMB,
 		)
 
-		// 写入CSV
 		writer.Write([]string{
 			metrics.Timestamp,
+			nodeID,
 			fmt.Sprintf("%.2f", heapAllocMB),
-			fmt.Sprintf("%.2f", heapInUseMB),
+			fmt.Sprintf("%.2f", heapInuseMB),
 			fmt.Sprintf("%.2f", stackInUseMB),
 			strconv.Itoa(metrics.NumGoroutine),
+			fmt.Sprintf("%.2f", totalAllocMB),
 		})
 		writer.Flush()
 	}
