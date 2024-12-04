@@ -31,7 +31,7 @@ type PerformanceMetrics struct {
 }
 
 func monitorPerformance(nodeID string) {
-	dirName := fmt.Sprintf("performance_data_%s", time.Now().Format("20060102_150405"))
+	dirName := fmt.Sprintf("perfor_data_%s", time.Now().Format("20060102_150405"))
 	err := os.MkdirAll(dirName, 0755)
 	if err != nil {
 		fmt.Printf("Error creating directory: %v\n", err)
