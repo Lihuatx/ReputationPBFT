@@ -27,5 +27,5 @@ monitor_pid=$!
 python3 LinuxTest2.py "N"
 
 # 等待一段时间后结束监控
-sleep 300  # 可以根据需要调整监控时间
+sleep 10  # 可以根据需要调整监控时间
 kill $monitor_pid
