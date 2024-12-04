@@ -20,4 +20,4 @@ do
 done
 
 # 启动客户端
-python3 linuxTest2.py "N"  # 或者可以不需要启动客户端
+python3 LinuxTest2.py "N"  # 或者可以不需要启动客户端
