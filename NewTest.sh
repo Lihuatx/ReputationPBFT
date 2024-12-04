@@ -8,7 +8,7 @@ z=$2
 localhost="0.0.0.0"
 
 # 创建节点表
-python3 CreateNodeTable.py "$n" "$localhost" "$localhost" "$localhost" "$localhost" "$localhost"
+python3 CreateNodeTable2.py "$n" "$localhost"
 
 # 关闭已存在的tmux会话
 tmux kill-session -t myPBFT
