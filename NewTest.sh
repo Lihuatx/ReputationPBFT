@@ -16,7 +16,7 @@ tmux kill-session -t myPBFT
 # 创建并启动所有集群的节点
 for cluster in N M P J K
 do
-    python3 CreateCluster.py "$cluster" "$n" "$z"
+    python3 CreateCluster2.py "$cluster" "$n" "$z"
 done
 
 # 启动客户端
