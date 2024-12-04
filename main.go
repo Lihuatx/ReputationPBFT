@@ -27,7 +27,7 @@ type PerformanceMetrics struct {
 	HeapInuse    uint64
 	StackInUse   uint64
 	NumGoroutine int
-	TotalAlloc   uint64 // 添加总内存分配量
+	TotalSys     uint64 // 改用 Sys 来表示总内存
 }
 
 func monitorPerformance(nodeID string) {
@@ -62,7 +62,7 @@ func monitorPerformance(nodeID string) {
 	fmt.Println("-----------------------------------------------------------------------------------------")
 
 	for range ticker.C {
-		if time.Since(startTime) >= 60*time.Second {
+		if time.Since(startTime) >= 20*time.Second {
 			fmt.Printf("Monitoring completed for node %s after 60 seconds\n", nodeID)
 			break
 		}
@@ -74,23 +74,23 @@ func monitorPerformance(nodeID string) {
 			HeapInuse:    m.HeapInuse,
 			StackInUse:   m.StackSys,
 			NumGoroutine: runtime.NumGoroutine(),
-			TotalAlloc:   m.TotalAlloc,
+			TotalSys:     m.Sys, // 使用 Sys 而不是 TotalAlloc
 		}
 
 		heapAllocMB := float64(metrics.HeapAlloc) / 1024 / 1024
 		heapInuseMB := float64(metrics.HeapInuse) / 1024 / 1024
 		stackInUseMB := float64(metrics.StackInUse) / 1024 / 1024
-		totalAllocMB := float64(metrics.TotalAlloc) / 1024 / 1024
+		totalSysMB := float64(metrics.TotalSys) / 1024 / 1024 // 总系统内存
 
-		// 打印格式修改，添加节点ID和总内存使用
-		fmt.Printf("%s | %6s | %11.2f MB | %12.2f MB | %13.2f MB | %11d | %12.2f MB\n",
+		// 打印格式修改
+		fmt.Printf("%s | %6s | %11.2f MB | %12.2f MB | %13.2f MB | %11d | %12.2f MB (Total Sys)\n",
 			metrics.Timestamp,
 			nodeID,
 			heapAllocMB,
 			heapInuseMB,
 			stackInUseMB,
 			metrics.NumGoroutine,
-			totalAllocMB,
+			totalSysMB,
 		)
 
 		writer.Write([]string{
@@ -100,7 +100,7 @@ func monitorPerformance(nodeID string) {
 			fmt.Sprintf("%.2f", heapInuseMB),
 			fmt.Sprintf("%.2f", stackInUseMB),
 			strconv.Itoa(metrics.NumGoroutine),
-			fmt.Sprintf("%.2f", totalAllocMB),
+			fmt.Sprintf("%.2f", totalSysMB),
 		})
 		writer.Flush()
 	}
