@@ -31,14 +31,14 @@ type PerformanceMetrics struct {
 }
 
 func monitorPerformance(nodeID string) {
-	dirName := fmt.Sprintf("perfor_data_%s", time.Now().Format("20060102_150405"))
-	err := os.MkdirAll(dirName, 0755)
-	if err != nil {
-		fmt.Printf("Error creating directory: %v\n", err)
+	// 创建 performance_data 目录
+	if err := os.MkdirAll("performance_data", 0755); err != nil {
+		fmt.Printf("Error creating performance_data directory: %v\n", err)
 		return
 	}
 
-	filename := filepath.Join(dirName, fmt.Sprintf("%s_performance.csv", nodeID))
+	// 直接在 performance_data 目录下创建文件
+	filename := filepath.Join("performance_data", fmt.Sprintf("%s_performance.csv", nodeID))
 	file, err := os.Create(filename)
 	if err != nil {
 		fmt.Printf("Error creating file: %v\n", err)
@@ -62,7 +62,7 @@ func monitorPerformance(nodeID string) {
 	fmt.Println("-----------------------------------------------------------------------------------------")
 
 	for range ticker.C {
-		if time.Since(startTime) >= 20*time.Second {
+		if time.Since(startTime) >= 60*time.Second {
 			fmt.Printf("Monitoring completed for node %s after 60 seconds\n", nodeID)
 			break
 		}
