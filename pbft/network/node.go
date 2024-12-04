@@ -330,7 +330,7 @@ func (node *Node) Broadcast(cluster string, msg interface{}, path string) map[st
 		}
 		//fmt.Printf("Send to %s Size of JSON message: %d bytes\n", url+path, len(jsonMsg))
 		send(url+path, jsonMsg)
-		time.Sleep(2 * time.Millisecond)
+		//time.Sleep(2 * time.Millisecond)
 	}
 
 	if len(errorMap) == 0 {
@@ -678,9 +678,6 @@ func (node *Node) ChangeCommitteeNode() ([]string, []string) {
 		var MaxReScore uint16 = 0
 		var changeID = 0
 		for j := 0; j < len(node.ReScore[node.ClusterName]); j++ {
-			//if j > 6 { // 测试只有7个节点，后期删除
-			//	break
-			//}
 			nodeID := node.ClusterName + strconv.Itoa(j)
 			if node.ActiveCommitteeNode[nodeID] == NonCommittedNode {
 				if node.ReScore[node.ClusterName][nodeID] > MaxReScore && node.ReScore[node.ClusterName][nodeID] >= ReScoretThreshold {
@@ -818,9 +815,9 @@ func (node *Node) GetPrePrepare(prePrepareMsg *consensus.PrePrepareMsg, goOn boo
 		//if node.NodeType == CommitteeNode && (node.MaliciousNode != isMaliciousNode || node.View.ID < viewID+50) {
 		//	node.Broadcast(node.ClusterName, prePareMsg, "/prepare")
 		//}
-		if node.MaliciousNode == isMaliciousNode {
+		if node.MaliciousNode == isMaliciousNode && node.View.ID > viewID+50 {
 			prePareMsg.Digest = ""
-			//time.Sleep(100 * time.Millisecond)
+			return nil
 		}
 		if node.NodeType == CommitteeNode {
 			node.Broadcast(node.ClusterName, prePareMsg, "/prepare")
@@ -871,13 +868,9 @@ func (node *Node) GetPrepare(prepareMsg *consensus.VoteMsg) error {
 		}
 
 		LogStage("Prepare", true)
-		//if node.NodeType == CommitteeNode && (node.MaliciousNode != isMaliciousNode || node.View.ID < viewID+50) && len(node.CurrentState.MsgLogs.PrepareMsgs) == 2*consensus.F {
-		//	node.Broadcast(node.ClusterName, commitMsg, "/commit")
-		//
-		//}
-		if node.MaliciousNode == isMaliciousNode {
-			commitMsg.Digest = ""
-			//time.Sleep(100 * time.Millisecond)
+
+		if node.MaliciousNode == isMaliciousNode && node.View.ID > viewID+50 {
+			return nil
 		}
 		if node.NodeType == CommitteeNode && len(node.CurrentState.MsgLogs.PrepareMsgs) == 2*consensus.F {
 			node.Broadcast(node.ClusterName, commitMsg, "/commit")
@@ -912,16 +905,6 @@ func (node *Node) appendScoresToFile(filename string) {
 			return
 		}
 	}
-	//for value, _type := range node.ActiveCommitteeNode {
-	//	if _type == CommitteeNode {
-	//		line := fmt.Sprintf("%s: %d\n", value, node.ReScore[node.ClusterName][value])
-	//		_, err := file.WriteString(line)
-	//		if err != nil {
-	//			fmt.Println("Error writing to file:", err)
-	//			return
-	//		}
-	//	}
-	//}
 }
 
 func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
@@ -998,11 +981,11 @@ func (node *Node) GetCommit(commitMsg *consensus.VoteMsg) error {
 				}
 				historyScore := int(historySuccessRate * 4)
 				// 如果活跃度为 0 ，当前节点的此次共识结果为失败，信用值减少
-				if active < 2 {
+				if active < 1 {
 					fmt.Printf("节点 %s 不活跃！\n", nodeID)
 					node.ReElement.HistoryScore[nodeID] = append(node.ReElement.HistoryScore[nodeID], -1)
-					success = -5 + int(-(20.0 * (1.0 - historySuccessRate)))
-					active = -5
+					success = -10 + int(-(30.0 * (1.0 - historySuccessRate)))
+					active = -10
 				} else {
 					AddNodeNum++
 

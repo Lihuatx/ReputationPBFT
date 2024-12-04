@@ -97,6 +97,6 @@ const (
 	CommitMsg
 )
 
-const BatchSize = 50
+const BatchSize = 1
 
 var GlobalViewID int
