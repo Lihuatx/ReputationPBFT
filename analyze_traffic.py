@@ -12,6 +12,7 @@ def get_ports_from_nodetable():
             if len(parts) == 3:
                 cluster, node_id, address = parts
                 port = address.split(':')[1]
+                # 使用完整的标识符作为键
                 ports[port] = f"{cluster}-{node_id}"
     return ports
 
@@ -69,14 +70,20 @@ def analyze_capture_file(ports):
 def print_results(stats):
     print("\n======================= Traffic Analysis Results =======================")
     print("\nPer Node Traffic Statistics:")
-    print(f"{'Node ID':<10} {'Port':<8} {'Sent(KB)':<10} {'Recv(KB)':<10} {'Total(KB)':<10}")
-    print("-" * 65)
+    print(f"{'Node ID':<15} {'Port':<8} {'Sent(KB)':<10} {'Recv(KB)':<10} {'Total(KB)':<10}")
+    print("-" * 70)
 
     total_sent = 0
     total_received = 0
 
-    for port, data in sorted(stats.items(), key=lambda x: int(x[1]['node'][1:])):
-        print(f"{data['node']:<10} {port:<8} {data['sent_kb']:<10.2f} {data['received_kb']:<10.2f} {data['total_kb']:<10.2f}")
+    # 按照集群和节点ID排序
+    def sort_key(x):
+        node_id = x[1]['node']
+        cluster, number = node_id.split('-')
+        return (cluster, int(number[1:]))  # 例如 'N-N0' 会返回 ('N', 0)
+
+    for port, data in sorted(stats.items(), key=sort_key):
+        print(f"{data['node']:<15} {port:<8} {data['sent_kb']:<10.2f} {data['received_kb']:<10.2f} {data['total_kb']:<10.2f}")
         total_sent += data['sent_bytes']
         total_received += data['received_bytes']
 
