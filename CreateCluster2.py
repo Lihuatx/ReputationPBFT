@@ -27,7 +27,7 @@ def run_commands(arg):
             print(f"Session handling error: {e}")
 
     # 为每个集群分配不同的窗口索引范围
-    base_index = {'N': 0, 'M': 20, 'P': 40, 'J': 60, 'K': 80}
+    base_index = {'N': 0, 'M': 50, 'P': 100, 'J': 150, 'K': 200}
     start_index = base_index[arg]
 
     # 根据提供的 arg 值过滤命令
