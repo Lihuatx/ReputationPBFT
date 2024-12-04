@@ -19,5 +19,13 @@ do
     python3 CreateCluster2.py "$cluster" "$n" "$z"
 done
 
+# 启动性能监控
+python3 monitor_performance.py &
+monitor_pid=$!
+
 # 启动客户端
-python3 LinuxTest2.py "N"  # 或者可以不需要启动客户端
+python3 LinuxTest2.py "N"
+
+# 等待一段时间后结束监控
+sleep 300  # 可以根据需要调整监控时间
+kill $monitor_pid
