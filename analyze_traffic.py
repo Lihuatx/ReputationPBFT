@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 import subprocess
 import re
-import json
 from collections import defaultdict
+import time
 
 def get_ports_from_nodetable():
-    ports = {}  # 用于存储节点ID和端口的映射
+    ports = {}
     with open('nodetable.txt', 'r') as file:
         for line in file:
             parts = line.strip().split()
@@ -19,52 +19,77 @@ def create_port_filter(ports):
     return ' or '.join([f'port {port}' for port in ports])
 
 def analyze_capture_file(ports):
-    port_stats = defaultdict(lambda: {'packets': 0, 'bytes': 0})
+    print("\nAnalyzing traffic for each port...")
+    port_stats = defaultdict(lambda: {
+        'sent_packets': 0, 'sent_bytes': 0,
+        'received_packets': 0, 'received_bytes': 0
+    })
+    total_ports = len(ports)
 
-    # 分析每个端口的流量
-    for port in ports:
-        # 获取数据包数量
-        cmd = f"tcpdump -r ltdbft_capture.pcap -nn 'port {port}' | wc -l"
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        packets = int(result.stdout.strip())
+    for i, port in enumerate(ports, 1):
+        print(f"\rAnalyzing port {port} ({i}/{total_ports})", end='', flush=True)
 
-        # 获取字节数
-        cmd = f"tcpdump -r ltdbft_capture.pcap -nn 'port {port}' -q | awk '{{print $NF}}' | awk '{{sum += $1}} END {{print sum}}'"
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        bytes_count = int(result.stdout.strip() or 0)
+        try:
+            # 分析发送的数据包
+            cmd = f"tcpdump -r ltdbft_capture.pcap -nn 'src port {port}' | wc -l"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            sent_packets = int(result.stdout.strip())
 
-        port_stats[port] = {
-            'node': ports[port],
-            'packets': packets,
-            'bytes': bytes_count,
-            'kb': round(bytes_count / 1024, 2)
-        }
+            # 分析发送的字节数
+            cmd = f"tcpdump -r ltdbft_capture.pcap -nn 'src port {port}' -q | awk '{{print $NF}}' | awk '{{sum += $1}} END {{print sum}}'"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            sent_bytes = int(result.stdout.strip() or 0)
 
+            # 分析接收的数据包
+            cmd = f"tcpdump -r ltdbft_capture.pcap -nn 'dst port {port}' | wc -l"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            received_packets = int(result.stdout.strip())
+
+            # 分析接收的字节数
+            cmd = f"tcpdump -r ltdbft_capture.pcap -nn 'dst port {port}' -q | awk '{{print $NF}}' | awk '{{sum += $1}} END {{print sum}}'"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            received_bytes = int(result.stdout.strip() or 0)
+
+            port_stats[port] = {
+                'node': ports[port],
+                'sent_packets': sent_packets,
+                'sent_bytes': sent_bytes,
+                'sent_kb': round(sent_bytes / 1024, 2),
+                'received_packets': received_packets,
+                'received_bytes': received_bytes,
+                'received_kb': round(received_bytes / 1024, 2),
+                'total_kb': round((sent_bytes + received_bytes) / 1024, 2)
+            }
+        except Exception as e:
+            print(f"\nError analyzing port {port}: {e}")
+
+    print("\nAnalysis complete!")
     return port_stats
 
 def print_results(stats):
-    print("\n============= Traffic Analysis Results =============")
+    print("\n======================= Traffic Analysis Results =======================")
     print("\nPer Node Traffic Statistics:")
-    print(f"{'Node ID':<15} {'Port':<8} {'Packets':<10} {'Size (KB)':<10}")
-    print("-" * 45)
+    print(f"{'Node ID':<10} {'Port':<8} {'Sent(KB)':<10} {'Recv(KB)':<10} {'Total(KB)':<10}")
+    print("-" * 65)
 
-    total_packets = 0
-    total_bytes = 0
+    total_sent = 0
+    total_received = 0
 
-    for port, data in sorted(stats.items()):
-        print(f"{data['node']:<15} {port:<8} {data['packets']:<10} {data['kb']:<10.2f}")
-        total_packets += data['packets']
-        total_bytes += data['bytes']
+    for port, data in sorted(stats.items(), key=lambda x: int(x[1]['node'][1:])):
+        print(f"{data['node']:<10} {port:<8} {data['sent_kb']:<10.2f} {data['received_kb']:<10.2f} {data['total_kb']:<10.2f}")
+        total_sent += data['sent_bytes']
+        total_received += data['received_bytes']
 
     print("\nSummary:")
-    print(f"Total Packets: {total_packets}")
-    print(f"Total Traffic: {round(total_bytes/1024/1024, 2)} MB")
+    print(f"Total Sent: {round(total_sent/1024/1024, 2):,} MB")
+    print(f"Total Received: {round(total_received/1024/1024, 2):,} MB")
+    print(f"Total Traffic: {round((total_sent + total_received)/1024/1024, 2):,} MB")
 
 def main():
+    print("Reading node table...")
     ports = get_ports_from_nodetable()
     port_filter = create_port_filter(ports)
 
-    # 开始抓包
     print("Starting packet capture...")
     print("Press Ctrl+C to stop capturing...")
 
@@ -72,9 +97,9 @@ def main():
         subprocess.run(f"sudo tcpdump -i any '({port_filter})' -w ltdbft_capture.pcap", shell=True)
     except KeyboardInterrupt:
         print("\nCapture stopped by user")
+        time.sleep(1)
 
-    # 分析结果
-    print("\nAnalyzing capture file...")
+    print("\nStarting analysis...")
     stats = analyze_capture_file(ports)
     print_results(stats)
 
